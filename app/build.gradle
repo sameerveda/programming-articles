@@ -1,0 +1,52 @@
+plugins {
+    id 'application'
+}
+
+ext.appdir = file(Objects.requireNonNull(System.env.SAM_PROGRAMS, "System.env.SAM_PROGRAMS not found")+'/rssowl/bin')
+apply from: 'https://raw.githubusercontent.com/sameerveda/resources/master/tasks.gradle'
+
+repositories {
+    jcenter()
+}
+
+
+dependencies {
+  implementation files('myutils.jar')
+   
+  implementation 'org.jsoup:jsoup:1.12.2'
+  implementation 'org.slf4j:slf4j-simple:2.0.0-alpha1'
+  implementation 'javax.persistence:persistence-api:1.0.2'
+  implementation 'com.carrotsearch:hppc:0.8.1'
+  implementation 'org.json:json:20180813'
+  implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.681'
+  
+  implementation 'org.fusesource.jdbm:jdbm:2.0.1'
+  implementation 'org.codejargon.feather:feather:1.0'
+   
+   [':model', ':full-access-dynamodb', ':app-providers', ':jdbm-cached'].each {
+     implementation(project(it))
+   }
+}
+
+mainClassName = 'Main'
+version = '1.5'
+
+jar {
+  exclude 'fxml/*.fxgraph'
+}
+
+run {
+  workingDir = appdir.parent
+  environment['SELF_DIR'] = appdir.parent
+  environment['sam.slf4j.simple.enable'] = 'debug'
+  environment['dynamo-creds'] = 'dynamo-creds.properties'
+  args = ['view'] 
+} 
+
+
+defaultTasks 'install'
+
+test {
+  useJUnitPlatform()
+  systemProperty 'java.util.logging.config.file','test-logging.properties'
+}

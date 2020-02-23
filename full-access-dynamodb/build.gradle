@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    jcenter()
+}
+
+version = '1.5'
+
+dependencies {
+  implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.681'
+  implementation 'org.slf4j:slf4j-api:2.0.0-alpha1'
+}

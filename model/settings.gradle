@@ -1,0 +1,4 @@
+include ':full-access-dynamodb'
+project(':full-access-dynamodb').projectDir = file('../full-access-dynamodb')
+
+rootProject.name = 'model'

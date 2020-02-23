@@ -1,0 +1,7 @@
+[':model', ':full-access-dynamodb', ':app-providers', ':jdbm-cached']
+.each {
+  include(it)
+  project(it).projectDir = file('../' + (it - ':'))
+}
+
+rootProject.name = 'app'

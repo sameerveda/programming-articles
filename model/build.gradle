@@ -1,0 +1,31 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    jcenter()
+}
+
+version = '1.5'
+
+dependencies {
+  implementation 'javax.persistence:persistence-api:1.0.2'
+  implementation 'com.carrotsearch:hppc:0.8.1'
+  implementation 'org.slf4j:slf4j-api:2.0.0-alpha1'
+  implementation 'org.json:json:20180813'
+  implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.681'
+  
+  implementation(project(':full-access-dynamodb'))
+  
+  compileOnly files('myutils.jar')
+  
+  testImplementation 'org.json:json:20180813'
+  testImplementation files('myutils.jar')
+  testImplementation 'org.slf4j:slf4j-simple:2.0.0-alpha1'
+  testImplementation('org.junit.jupiter:junit-jupiter:5.5.2')
+  
+}
+
+test {
+  useJUnitPlatform()
+}

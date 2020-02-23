@@ -1,0 +1,18 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    jcenter()
+}
+
+version = '1.5'
+
+dependencies {
+  implementation(project(':full-access-dynamodb'))
+  implementation(project(':model'))
+  implementation 'org.codejargon.feather:feather:1.0'
+  implementation 'org.slf4j:slf4j-api:2.0.0-alpha1'
+  
+  compileOnly files('myutils.jar')   
+}
