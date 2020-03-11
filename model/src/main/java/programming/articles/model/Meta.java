@@ -1,4 +1,4 @@
-package programming.articles.model.dynamo;
+package programming.articles.model;
 
 import static sam.full.access.dynamodb.DynamoConnection.optInt;
 import static sam.full.access.dynamodb.DynamoConnection.optString;

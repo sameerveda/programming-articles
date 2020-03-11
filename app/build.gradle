@@ -19,6 +19,9 @@ dependencies {
   implementation 'com.carrotsearch:hppc:0.8.1'
   implementation 'org.json:json:20180813'
   implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.681'
+  // implementation 'com.j256.ormlite:ormlite-jdbc:5.1'
+  // implementation 'com.j256.ormlite:ormlite-core:5.1'
+  implementation 'org.xerial:sqlite-jdbc:3.7.2'
   
   implementation 'org.fusesource.jdbm:jdbm:2.0.1'
   implementation 'org.codejargon.feather:feather:1.0'
@@ -29,7 +32,7 @@ dependencies {
 }
 
 mainClassName = 'Main'
-version = '1.5'
+version = '1.505'
 
 jar {
   exclude 'fxml/*.fxgraph'

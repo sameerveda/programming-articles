@@ -1,12 +1,12 @@
-package programming.articles.model.dynamo;
+package programming.articles.model;
 
-import static programming.articles.model.dynamo.Meta.ID;
-import static programming.articles.model.dynamo.Meta.SPARSE_DATA;
-import static programming.articles.model.dynamo.Meta.TABLE_NAME;
-import static programming.articles.model.dynamo.Utils.buf;
-import static programming.articles.model.dynamo.Utils.key;
-import static programming.articles.model.dynamo.Utils.readShorts;
-import static programming.articles.model.dynamo.Utils.readStatus;
+import static programming.articles.model.Meta.ID;
+import static programming.articles.model.Meta.SPARSE_DATA;
+import static programming.articles.model.Meta.TABLE_NAME;
+import static programming.articles.model.Utils.buf;
+import static programming.articles.model.Utils.key;
+import static programming.articles.model.Utils.readShorts;
+import static programming.articles.model.Utils.readStatus;
 import static sam.full.access.dynamodb.DynamoConnection.add;
 import static sam.full.access.dynamodb.DynamoConnection.value;
 
@@ -142,7 +142,6 @@ public class LoadedMetas implements Externalizable {
 
 	public LoadedMetas() {
 	}
-
 	public boolean isUpdated() {
 		return updated;
 	}

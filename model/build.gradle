@@ -6,13 +6,15 @@ repositories {
     jcenter()
 }
 
-version = '1.5'
+version = '1.505'
 
 dependencies {
   implementation 'javax.persistence:persistence-api:1.0.2'
   implementation 'com.carrotsearch:hppc:0.8.1'
   implementation 'org.slf4j:slf4j-api:2.0.0-alpha1'
   implementation 'org.json:json:20180813'
+  implementation 'com.fasterxml.jackson.core:jackson-annotations:2.10.3'
+  
   implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.681'
   
   implementation(project(':full-access-dynamodb'))
@@ -22,8 +24,13 @@ dependencies {
   testImplementation 'org.json:json:20180813'
   testImplementation files('myutils.jar')
   testImplementation 'org.slf4j:slf4j-simple:2.0.0-alpha1'
-  testImplementation('org.junit.jupiter:junit-jupiter:5.5.2')
-  
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.5.2'
+  testImplementation 'org.xerial:sqlite-jdbc:3.7.2'
+  testImplementation 'com.j256.ormlite:ormlite-jdbc:5.1'
+  testImplementation 'com.j256.ormlite:ormlite-core:5.1'
+  testImplementation 'com.h2database:h2:1.4.199'
+  testImplementation 'org.xerial:sqlite-jdbc:3.7.2'
+  testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.10.3'
 }
 
 test {

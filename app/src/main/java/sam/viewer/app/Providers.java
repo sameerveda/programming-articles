@@ -7,7 +7,6 @@ import static sam.myutils.MyUtilsPath.SELF_DIR;
 import static sam.myutils.System2.lookup;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -18,9 +17,6 @@ import org.codejargon.feather.Provides;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.PropertiesCredentials;
-
 import javafx.application.HostServices;
 import javafx.stage.Stage;
 import jdbm.cached.JdbmCache;
@@ -29,7 +25,6 @@ import sam.api.TagsAdder;
 import sam.api.UrlOpener;
 import sam.di.Injector;
 import sam.full.access.dynamodb.DynamoConnection;
-import sam.myutils.System2;
 import sam.nopkg.EnsureSingleton;
 import sam.reference.WeakAndLazy;
 import sam.viewer.TagsAdderImpl;
@@ -64,7 +59,7 @@ class Providers extends DefaultProviders implements UrlOpener {
 	
 	@Override
 	protected DynamoConnection openConnection() throws Exception {
-		return new DynamoConnection(new AWSStaticCredentialsProvider(new PropertiesCredentials(Files.newInputStream(Paths.get(System2.lookup("dynamo-creds"))))));
+		return new DynamoConnection();
 	}
 
 	public void setHostServices(HostServices hostServices) {

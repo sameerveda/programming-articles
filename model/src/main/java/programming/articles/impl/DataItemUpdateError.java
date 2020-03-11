@@ -1,6 +1,6 @@
 package programming.articles.impl;
 
-import programming.articles.model.dynamo.DataItem;
+import programming.articles.model.DataItem;
 
 public class DataItemUpdateError {
 	public final String field;

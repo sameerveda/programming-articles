@@ -1,4 +1,4 @@
-package programming.articles.model.dynamo;
+package programming.articles.model;
 
 import java.io.IOException;
 import java.io.OutputStream;

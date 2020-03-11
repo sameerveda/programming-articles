@@ -1,4 +1,4 @@
-package programming.articles.model.dynamo;
+package programming.articles.model;
 
 import static sam.full.access.dynamodb.DynamoConnection.optString;
 
@@ -8,18 +8,28 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.persistence.Column;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
 import org.json.JSONObject;
 import org.json.JSONWriter;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import programming.articles.api.JsonWritable;
 
+@Table(name = ConstantDataItem.SQL_TABLE_NAME)
+@DynamoDBTable(tableName = ConstantDataItem.TABLE_NAME)
 public class ConstantDataItem implements JsonWritable, Serializable {
 	private static final long serialVersionUID = 4594811689425599481L;
 
 	public static final String TABLE_NAME = "programming-articles-data";
-	
+	public static final String SQL_TABLE_NAME = "Data";
+
 	public static final String ID = "id";
 	public static final String TITLE = "title";
 	public static final String SOURCE = "source";
@@ -27,17 +37,33 @@ public class ConstantDataItem implements JsonWritable, Serializable {
 	public static final String FAVICON = "favicon";
 	public static final String ADDED_ON = "addedOn";
 
-	public static final List<String> CONSTANT_DATAITEM_FIELDS = Collections.unmodifiableList(Arrays.asList(ID, TITLE, SOURCE, REDIRECT, FAVICON, ADDED_ON));
+	public static final List<String> CONSTANT_DATAITEM_FIELDS = Collections
+			.unmodifiableList(Arrays.asList(ID, TITLE, SOURCE, REDIRECT, FAVICON, ADDED_ON));
 
+	@Id
+	@Column(unique = true, nullable = false, updatable = false)
+	@JsonProperty
+	@DynamoDBHashKey
 	protected short id;
+	@Column(nullable = false, unique = true, updatable = false)
+	@JsonProperty
 	protected String title;
+	@Column(nullable = false, unique = true, updatable = false, length = 500)
+	@JsonProperty
 	protected String source;
+	@Column(unique = true, updatable = false, length = 500)
+	@JsonProperty
 	protected String redirect;
+	@Column(updatable = false, length = 500)
+	@JsonProperty
 	protected String favicon;
+	@Column(nullable = false, updatable = false, length = 10)
+	@JsonProperty
 	protected String addedOn;
-	
-	public ConstantDataItem() { }
-	
+
+	public ConstantDataItem() {
+	}
+
 	public ConstantDataItem(Map<String, AttributeValue> values) {
 		this.id = Short.parseShort(values.get(ID).getN());
 		this.title = values.get(TITLE).getS();
@@ -46,7 +72,7 @@ public class ConstantDataItem implements JsonWritable, Serializable {
 		this.favicon = optString(values, FAVICON);
 		this.addedOn = values.get(ADDED_ON).getS();
 	}
-	
+
 	public ConstantDataItem(JSONObject json) {
 		this.id = (short) json.getInt(ID);
 		this.title = json.getString(TITLE);
@@ -57,12 +83,8 @@ public class ConstantDataItem implements JsonWritable, Serializable {
 	}
 
 	public void write(JSONWriter w) {
-		w.key(ID).value(id)
-		.key(TITLE).value(title)
-		.key(SOURCE).value(source)
-		.key(REDIRECT).value(redirect)
-		.key(FAVICON).value(favicon)
-		.key(ADDED_ON).value(addedOn);
+		w.key(ID).value(id).key(TITLE).value(title).key(SOURCE).value(source).key(REDIRECT).value(redirect).key(FAVICON)
+				.value(favicon).key(ADDED_ON).value(addedOn);
 	}
 
 	@Override

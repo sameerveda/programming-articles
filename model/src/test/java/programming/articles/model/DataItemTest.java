@@ -1,21 +1,66 @@
-package programming.articles.model.dynamo;
+package programming.articles.model;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
+import org.sqlite.JDBC;
 
-import programming.articles.model.DataStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.jdbc.JdbcSingleConnectionSource;
+import com.j256.ormlite.support.ConnectionSource;
+import com.j256.ormlite.table.TableUtils;
+
 import sam.io.serilizers.ObjectReader;
 import sam.io.serilizers.ObjectWriter;
 
 class DataItemTest {
+	
+	@Test
+	void sqlGetTest() throws SQLException, IOException {
+		String url = JDBC.PREFIX.concat("C:\\Users\\sameer\\Documents\\MEGAsync\\SimpleUtils\\sam\\programs\\rssowl\\data.db");
+		
+		/* sam ide dynamo
+		 * AmazonDynamoDB db = AmazonDynamoDBClientBuilder.standard()
+				.withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("accessKey", "secretKey")))
+				.withEndpointConfiguration(new EndpointConfiguration("http://localhost:8000", Regions.AP_SOUTH_1.toString()))
+				.build();
+		*/
+		
+		try(Connection c = JDBC.createConnection(url, new Properties());
+				JdbcSingleConnectionSource src = new JdbcSingleConnectionSource(url, c)) {
+			src.initialize();
+			
+			Dao<DataItem, Short> dao = DaoManager.createDao(src, DataItem.class);
+			DataItem d = dao.queryForId((short)4650);
+			System.out.println(
+					new JSONObject(d.toString()).toString(4)
+					+"\n-----------------------------------------------------\n"+
+						new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(d)	
+					);
+		} finally {
+		//	db.shutdown();
+		} 
+	}
+	
+	@Test
+	void tableCreateTest() throws IOException, SQLException {
+		try(ConnectionSource c = new JdbcConnectionSource("jdbc:h2:mem:account")) {
+			TableUtils.createTable(c, DataItem.class);
+		}
+	}
 
 	@Test
 	void testConstantDataItem() throws IOException, ClassNotFoundException {

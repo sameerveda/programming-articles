@@ -1,4 +1,4 @@
-package programming.articles.model.dynamo;
+package programming.articles.model;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,6 +16,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.event.Level;
 
+import programming.articles.model.LoadedMetas;
+import programming.articles.model.SettableLoadedMetas;
 import sam.full.access.dynamodb.DynamoConnection;
 import sam.io.serilizers.ObjectReader;
 import sam.io.serilizers.ObjectWriter;

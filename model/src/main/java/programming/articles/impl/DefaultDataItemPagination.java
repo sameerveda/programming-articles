@@ -8,13 +8,14 @@ import com.carrotsearch.hppc.predicates.ShortPredicate;
 
 import programming.articles.api.ConstantDataItemPagination;
 import programming.articles.api.StateManager;
+import programming.articles.model.ConstantDataItem;
 import programming.articles.model.DataStatus;
-import programming.articles.model.dynamo.ConstantDataItem;
 import sam.collection.ArraysUtils;
 
 public class DefaultDataItemPagination implements ConstantDataItemPagination {
 	private final short[] allIds;
 	private int pageSize = -1;
+	private short startingId = -1;
 	private int page = 0;
 	private final StateManager stateManager;
 	private DataStatus status;
@@ -52,6 +53,10 @@ public class DefaultDataItemPagination implements ConstantDataItemPagination {
 		this.page = page;
 	}
 	
+	public void setStartingId(short startingId) {
+		this.startingId = startingId;
+	}
+	
 	@Override
 	public ShortPredicate getFilter() {
 		if(status == null)
@@ -66,26 +71,38 @@ public class DefaultDataItemPagination implements ConstantDataItemPagination {
 	}
 	
 	private short[] data() {
-		int skip = skip();
+		if((startingId < 0 && page < 0) || pageSize <= 0)
+			throw new IllegalStateException(String.format("startingId(%s) < 0 && page(%s) < 0) || pageSize(%s) <= 0", startingId, page, pageSize));
+
+		int skip = page > 0 ? skip() : 0;
 		if(skip < 0)
 			throw new IllegalStateException("small skip value");
 		
 		short[] list = new short[pageSize];
+		int start = 0;
+		if(startingId >= 0) {
+			while(allIds[start++] != startingId) {}
+		}
+		if(start == allIds.length)
+			throw new IllegalArgumentException("startingId not found: "+startingId);
+		
 		int skipped = 0;
-		int index = 0;
+		int size = 0;
 		
 		ShortPredicate filter = getFilter();
 		
-		for (short s : allIds) {
+		while(start < allIds.length) {
+			short s = allIds[start++];
 			if(filter.apply(s)) {
 				if(++skipped > skip) {
-					list[index++] = s;
-					if(index == pageSize)
+					list[size++] = s;
+					if(size == pageSize)
 						break;
 				}
 			}
 		}
-		return index < pageSize ? Arrays.copyOf(list, index) : list;
+		
+		return size < pageSize ? Arrays.copyOf(list, size) : list;
 	}
 
 	@Override

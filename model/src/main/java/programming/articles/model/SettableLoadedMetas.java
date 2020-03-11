@@ -1,10 +1,10 @@
-package programming.articles.model.dynamo;
+package programming.articles.model;
 
-import static programming.articles.model.dynamo.Meta.COMPRESSED_DATA;
-import static programming.articles.model.dynamo.Meta.ID;
-import static programming.articles.model.dynamo.Meta.SPARSE_DATA;
-import static programming.articles.model.dynamo.Meta.TABLE_NAME;
-import static programming.articles.model.dynamo.Utils.buf;
+import static programming.articles.model.Meta.COMPRESSED_DATA;
+import static programming.articles.model.Meta.ID;
+import static programming.articles.model.Meta.SPARSE_DATA;
+import static programming.articles.model.Meta.TABLE_NAME;
+import static programming.articles.model.Utils.buf;
 import static sam.full.access.dynamodb.DynamoConnection.delete;
 import static sam.full.access.dynamodb.DynamoConnection.map;
 import static sam.full.access.dynamodb.DynamoConnection.put;
@@ -40,7 +40,7 @@ public final class SettableLoadedMetas extends LoadedMetas {
 	public void setAllIds(short[] ids) {
 		if(ids == null || ids.length == 0)
 			throw new IllegalArgumentException("ids cannot be empty: "+ids);
-		
+
 		ids = processIds(ids);
 		putCompressed(IDS, buf(ids));
 		this.ids = ids;
@@ -49,29 +49,29 @@ public final class SettableLoadedMetas extends LoadedMetas {
 	public static short[] processIds(short[] ids) {
 		if(ids == null || ids.length < 2)
 			return ids;
-		
+
 		Arrays.sort(ids);
-		
+
 		int size = 0;
 		for (int i = 0; i < ids.length - 1; i++) {
 			if(ids[i] != ids[i + 1])
 				size++;
 		}
-		
+
 		size++; // account for last elment
-		
+
 		if(size == ids.length)
 			return ids;
-		
+
 		short[] newIds = new short[size];
 		size = 0;
 		for (int i = 0; i < ids.length - 1; i++) {
 			if(ids[i] != ids[i + 1])
 				newIds[size++] = ids[i];
 		}
-		
+
 		newIds[size++] = ids[ids.length - 1];
-		
+
 		return Arrays.copyOf(newIds, size);
 	}
 
@@ -87,5 +87,15 @@ public final class SettableLoadedMetas extends LoadedMetas {
 		logger.debug("set tags: {}", tags.size());		
 		putCompressed(TAGS, buf(tags));
 		this.tags = tags;
+	}
+	public static SettableLoadedMetas wrap(LoadedMetas metas) {
+		SettableLoadedMetas m = new SettableLoadedMetas();
+		m.idStatusMap = metas.idStatusMap;
+		m.ids = metas.ids;
+		m.tags = metas.tags;
+		m.connection = metas.connection;
+		m._version = metas._version;
+		
+		return m;
 	}
 }

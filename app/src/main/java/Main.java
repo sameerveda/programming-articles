@@ -17,8 +17,8 @@ import com.carrotsearch.hppc.ShortArrayList;
 
 import javafx.application.Application;
 import programming.articles.model.DataStatus;
-import programming.articles.model.dynamo.LoadedMetas;
-import programming.articles.model.dynamo.MetaReset;
+import programming.articles.model.LoadedMetas;
+import programming.articles.model.MetaReset;
 import sam.collection.ArraysUtils;
 import sam.console.ANSI;
 import sam.full.access.dynamodb.DynamoConnection;
@@ -59,6 +59,12 @@ public class Main {
 				break;
 			case "meta-print":
 				printMeta(System2.lookupInt("sam.line.width", 80));
+				break;
+			case "scrapper-meta-reset":
+				RssOwlUrlProcessor.resetLoadedMetasFile();
+				break;
+			case "get-items":
+				RssOwlUrlProcessor.getItems(Arrays.copyOfRange(args, 1, args.length));
 				break;
 			default:
 				System.out.println(ANSI.red("failed  command: ") + Arrays.toString(args));

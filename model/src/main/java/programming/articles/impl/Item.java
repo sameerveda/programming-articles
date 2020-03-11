@@ -7,9 +7,9 @@ import java.util.Objects;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 
+import programming.articles.model.ConstantDataItem;
+import programming.articles.model.DataItem;
 import programming.articles.model.DataStatus;
-import programming.articles.model.dynamo.ConstantDataItem;
-import programming.articles.model.dynamo.DataItem;
 
 class Item extends DataItem implements Serializable {
 	private static final long serialVersionUID = 8980322081100311801L;

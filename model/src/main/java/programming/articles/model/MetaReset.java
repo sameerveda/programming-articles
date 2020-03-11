@@ -1,13 +1,13 @@
-package programming.articles.model.dynamo;
+package programming.articles.model;
 
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toMap;
-import static programming.articles.model.dynamo.LoadedMetas.IDS;
-import static programming.articles.model.dynamo.LoadedMetas.IDS_STATUS;
-import static programming.articles.model.dynamo.LoadedMetas.TAGS;
-import static programming.articles.model.dynamo.Utils.parseTags;
-import static programming.articles.model.dynamo.Utils.readShorts;
-import static programming.articles.model.dynamo.Utils.readStatus;
+import static programming.articles.model.LoadedMetas.IDS;
+import static programming.articles.model.LoadedMetas.IDS_STATUS;
+import static programming.articles.model.LoadedMetas.TAGS;
+import static programming.articles.model.Utils.parseTags;
+import static programming.articles.model.Utils.readShorts;
+import static programming.articles.model.Utils.readStatus;
 
 import java.util.List;
 import java.util.Map;

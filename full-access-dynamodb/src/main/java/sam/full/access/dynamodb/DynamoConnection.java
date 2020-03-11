@@ -250,7 +250,7 @@ public class DynamoConnection implements AutoCloseable {
 	 * @param retryFailed
 	 * @return value of continue
 	 */
-	private boolean write(List<Map<String, List<WriteRequest>>> list, Predicate<List<Map<String, List<WriteRequest>>>> retryFailed) {
+	public boolean write(List<Map<String, List<WriteRequest>>> list, Predicate<List<Map<String, List<WriteRequest>>>> retryFailed) {
 		while (!list.isEmpty()) {
 			if (!retryFailed.test(list))
 				return false;

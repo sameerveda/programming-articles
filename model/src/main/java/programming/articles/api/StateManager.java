@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+import programming.articles.model.ConstantDataItem;
+import programming.articles.model.DataItem;
 import programming.articles.model.Tag;
-import programming.articles.model.dynamo.ConstantDataItem;
-import programming.articles.model.dynamo.DataItem;
 
 public interface StateManager extends AutoCloseable {
 	Collection<Tag> allTagsNames();

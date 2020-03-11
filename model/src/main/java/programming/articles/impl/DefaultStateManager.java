@@ -1,16 +1,18 @@
 package programming.articles.impl;
 
-import static programming.articles.model.dynamo.ConstantDataItem.CONSTANT_DATAITEM_FIELDS;
-import static programming.articles.model.dynamo.ConstantDataItem.ID;
-import static programming.articles.model.dynamo.ConstantDataItem.TABLE_NAME;
-import static programming.articles.model.dynamo.DataItem.*;
-import static programming.articles.model.dynamo.DataItem.STATUS;
-import static programming.articles.model.dynamo.DataItem.VERSION;
+import static programming.articles.model.ConstantDataItem.CONSTANT_DATAITEM_FIELDS;
+import static programming.articles.model.ConstantDataItem.ID;
+import static programming.articles.model.ConstantDataItem.TABLE_NAME;
+import static programming.articles.model.DataItem.DATAITEM_FIELDS;
+import static programming.articles.model.DataItem.STATUS;
+import static programming.articles.model.DataItem.UPDATEABLE_FIELDS;
+import static programming.articles.model.DataItem.VERSION;
+import static programming.articles.model.DataStatus.parse;
+import static programming.articles.model.DataStatus.values;
 import static sam.full.access.dynamodb.DynamoConnection.delete;
 import static sam.full.access.dynamodb.DynamoConnection.map;
 import static sam.full.access.dynamodb.DynamoConnection.put;
 import static sam.full.access.dynamodb.DynamoConnection.value;
-import static programming.articles.model.DataStatus.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,11 +46,11 @@ import com.carrotsearch.hppc.ShortObjectScatterMap;
 
 import programming.articles.api.ShortCacheHandler;
 import programming.articles.api.StateManager;
+import programming.articles.model.ConstantDataItem;
+import programming.articles.model.DataItem;
 import programming.articles.model.DataStatus;
+import programming.articles.model.LoadedMetas;
 import programming.articles.model.Tag;
-import programming.articles.model.dynamo.ConstantDataItem;
-import programming.articles.model.dynamo.DataItem;
-import programming.articles.model.dynamo.LoadedMetas;
 import sam.full.access.dynamodb.DynamoConnection;
 import sam.myutils.Checker;
 import sam.myutils.HPPCUtils;

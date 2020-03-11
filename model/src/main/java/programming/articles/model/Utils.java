@@ -1,4 +1,4 @@
-package programming.articles.model.dynamo;
+package programming.articles.model;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

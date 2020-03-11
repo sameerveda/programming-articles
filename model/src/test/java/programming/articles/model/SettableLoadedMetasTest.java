@@ -1,4 +1,4 @@
-package programming.articles.model.dynamo;
+package programming.articles.model;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,6 +15,7 @@ import org.slf4j.event.Level;
 import com.carrotsearch.hppc.IntScatterSet;
 import com.carrotsearch.hppc.ShortScatterSet;
 
+import programming.articles.model.SettableLoadedMetas;
 import sam.collection.ArraysUtils;
 import sam.myutils.LoggerUtils;
 
