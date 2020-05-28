@@ -6,13 +6,13 @@ import java.util.function.BiConsumer;
 
 import com.carrotsearch.hppc.predicates.ShortPredicate;
 
-import programming.articles.api.ConstantDataItemPagination;
+import programming.articles.api.DataItemPagination;
 import programming.articles.api.StateManager;
-import programming.articles.model.ConstantDataItem;
+import programming.articles.model.DataItem;
 import programming.articles.model.DataStatus;
 import sam.collection.ArraysUtils;
 
-public class DefaultDataItemPagination implements ConstantDataItemPagination {
+public class DefaultDataItemPagination implements DataItemPagination {
 	private final short[] allIds;
 	private int pageSize = -1;
 	private short startingId = -1;
@@ -66,7 +66,7 @@ public class DefaultDataItemPagination implements ConstantDataItemPagination {
 	}
 	
 	@Override
-	public void getData(BiConsumer<List<ConstantDataItem>, Exception> onResult) {
+	public  void getData(BiConsumer<List<DataItem>, Exception> onResult) {
 		stateManager.loadItems(data(), onResult);
 	}
 	
@@ -106,7 +106,7 @@ public class DefaultDataItemPagination implements ConstantDataItemPagination {
 	}
 
 	@Override
-	public List<ConstantDataItem> getData() throws Exception {
+	public  List<DataItem> getData() throws Exception {
 		return stateManager.loadItems(data());
 	}
 

@@ -1,4 +1,4 @@
-[':model', ':full-access-dynamodb', ':app-providers', ':jdbm-cached']
+[':model', ':full-access-dynamodb', ':app-providers']
 .each {
   include(it)
   project(it).projectDir = file('../' + (it - ':'))

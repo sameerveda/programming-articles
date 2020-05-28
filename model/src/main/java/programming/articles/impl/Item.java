@@ -1,5 +1,9 @@
 package programming.articles.impl;
 
+import static programming.articles.model.DataItemMeta.NOTES;
+import static programming.articles.model.DataItemMeta.STATUS;
+import static programming.articles.model.DataItemMeta.TAGS;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,7 +11,6 @@ import java.util.Objects;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 
-import programming.articles.model.ConstantDataItem;
 import programming.articles.model.DataItem;
 import programming.articles.model.DataStatus;
 
@@ -20,7 +23,7 @@ class Item extends DataItem implements Serializable {
 		super(values);
 	}
 
-	public Item(Map<String, AttributeValue> values, ConstantDataItem item) {
+	public Item(Map<String, AttributeValue> values, DataItem item) {
 		this.id = item.getId();
 		this.title = item.getTitle();
 		this.source = item.getSource();

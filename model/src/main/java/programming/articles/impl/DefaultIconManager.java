@@ -26,9 +26,7 @@ import sam.reference.ReferenceUtils;
 
 public class DefaultIconManager implements IconManager {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-
 	private final Set<String> notFound = Collections.synchronizedSet(new HashSet<>());
-	
 
 	private byte[] buffer;
 	private ByteArrayOutputStream download_sink;

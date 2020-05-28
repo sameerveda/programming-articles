@@ -19,14 +19,12 @@ dependencies {
   implementation 'com.carrotsearch:hppc:0.8.1'
   implementation 'org.json:json:20180813'
   implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.681'
-  // implementation 'com.j256.ormlite:ormlite-jdbc:5.1'
-  // implementation 'com.j256.ormlite:ormlite-core:5.1'
-  implementation 'org.xerial:sqlite-jdbc:3.7.2'
   
-  implementation 'org.fusesource.jdbm:jdbm:2.0.1'
   implementation 'org.codejargon.feather:feather:1.0'
+  implementation 'com.almworks.sqlite4java:sqlite4java:1.0.392'
+  implementation 'com.almworks.sqlite4java:sqlite4java-win32-x64:1.0.392'
    
-   [':model', ':full-access-dynamodb', ':app-providers', ':jdbm-cached'].each {
+   [':model', ':full-access-dynamodb', ':app-providers'].each {
      implementation(project(it))
    }
 }

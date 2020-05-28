@@ -4,7 +4,6 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Formatter;
 import java.util.List;
@@ -12,6 +11,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.almworks.sqlite4java.SQLiteException;
 import com.carrotsearch.hppc.IntObjectHashMap;
 import com.carrotsearch.hppc.ShortArrayList;
 
@@ -27,13 +27,12 @@ import sam.myutils.HPPCUtils;
 import sam.myutils.LoggerUtils;
 import sam.myutils.System2;
 import sam.rssowl.RssOwlUrlProcessor;
-import sam.viewer.app.App;
 
 public class Main {
 
 	public static void main(String[] args) throws Exception {
 		LoggerUtils.lookupEnableSlf4jSimple();
-
+		
 		if (args.length == 0) {
 			System.out.println(ANSI.red("no command specified"));
 			printUsage();
@@ -50,21 +49,22 @@ public class Main {
 				byClipboard();
 				break;
 			case "view":
-				Application.launch(App.class, args);
-				break;
+				throw new RuntimeException("no implemented");
+				// TODO Application.launch(App.class, args);
+				// break;
 			case "meta-reset":
 				try (DynamoConnection con = new DynamoConnection()) {
 					new MetaReset(con).run();
 				}
 				break;
+			case "sync": 
+				new RssOwlUrlProcessor().sync();
+				break;
 			case "meta-print":
 				printMeta(System2.lookupInt("sam.line.width", 80));
 				break;
-			case "scrapper-meta-reset":
-				RssOwlUrlProcessor.resetLoadedMetasFile();
-				break;
 			case "get-items":
-				RssOwlUrlProcessor.getItems(Arrays.copyOfRange(args, 1, args.length));
+				RssOwlUrlProcessor.getItems2(Arrays.copyOfRange(args, 1, args.length));
 				break;
 			default:
 				System.out.println(ANSI.red("failed  command: ") + Arrays.toString(args));
@@ -142,7 +142,7 @@ public class Main {
 	}
 
 	private static void byClipboard()
-			throws SQLException, IOException, UnsupportedFlavorException, InterruptedException, ClassNotFoundException {
+			throws SQLiteException, IOException, UnsupportedFlavorException, InterruptedException, ClassNotFoundException {
 		Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
 		String s = (String) clip.getData(DataFlavor.stringFlavor);
 		if (s == null)
@@ -151,16 +151,16 @@ public class Main {
 			List<String> array = Pattern.compile("\r?\n").splitAsStream(s).filter(Checker::isNotEmptyTrimmed)
 					.collect(Collectors.toList());
 
-			new RssOwlUrlProcessor().invoke(array);
+			new RssOwlUrlProcessor().extract(array);
 		}
 	}
 
-	private static void byFiles(String[] files) throws IOException, SQLException, InterruptedException, ClassNotFoundException {
+	private static void byFiles(String[] files) throws IOException, SQLiteException, InterruptedException, ClassNotFoundException {
 		if (files.length == 0)
 			System.out.println(ANSI.red("no files specified"));
 		else {
 			for (String f : files)
-				new RssOwlUrlProcessor().invoke(Paths.get(f));
+				new RssOwlUrlProcessor().extract(Paths.get(f));
 		}
 	}
 

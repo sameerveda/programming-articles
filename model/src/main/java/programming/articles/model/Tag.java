@@ -1,48 +1,52 @@
 package programming.articles.model;
 
+import static programming.articles.model.TagMeta.ID;
+import static programming.articles.model.TagMeta.NAME;
+import static programming.articles.model.TagMeta.TAG_TABLE_NAME;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.IntStream;
 
-import javax.persistence.Column;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
 import com.carrotsearch.hppc.procedures.ShortProcedure;
 
+import sam.sql.QueryUtils;
 
-@Table(name="Tags")
 public class Tag {
-	@Id private short id;
-	@Column(nullable=false, unique=true) 
-	private String name;
-	
-	@Transient
-	private transient String lowercased;
-    
+	public static final List<String> COLUMNS = Collections.unmodifiableList(Arrays.asList(ID, NAME));
+
+	public final short id;
+	public final String name;
+
+	public Tag(SQLiteStatement rs) throws SQLiteException {
+		short n = 0;
+		this.id = (short)rs.columnInt(n++); // ID
+		this.name = rs.columnString(n++); // NAME
+	}
+
 	public Tag(short id, String name) {
 		this.id = id;
 		this.name = name;
 	}
-	
-	public Tag() { }
-	
+
 	public short getId() {
-		return id;
+		return this.id;
 	}
-	public void setId(short id) {
-		this.id = id;
-	}
+
 	public String getName() {
-		return name;
+		return this.name;
 	}
-	public void setName(String name) {
-		this.name = name;
-	}
-	
-	public String getLowercased() {
-		if(lowercased == null)
-			lowercased = name.toLowerCase();
-		return lowercased;
+
+	static final String SELECT_SQL = "SELECT " + String.join(",", COLUMNS) + " FROM " + TAG_TABLE_NAME;
+	static final String INSERT_SQL = QueryUtils.insertSQL(TAG_TABLE_NAME, COLUMNS);
+
+	void insert(SQLiteStatement p) throws SQLiteException {
+		short n = 1;
+		p.bind(n++, id);
+		p.bind(n++, name);
 	}
 	
 	public static String serialize(IntStream tags) {
@@ -57,7 +61,7 @@ public class Tag {
 			return;
 		
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < len; i++) {
+		for (short i = 0; i < len; i++) {
 			char c = tags.charAt(i);
 			if(c == '.') {
 				if(sb.length() != 0) {
@@ -71,11 +75,12 @@ public class Tag {
 	}
 
 	public static void appendTo(IntStream tags, StringBuilder sink) {
-		tags.forEach(n -> sink.append('.').append(n).append('.'));
+		tags.sorted().distinct().forEach(n -> sink.append('.').append(n).append('.'));
 	}
 
 	@Override
 	public String toString() {
 		return "Tag(" + id + ": " + name + ")";
 	}
+
 }

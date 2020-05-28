@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -41,6 +42,8 @@ import com.amazonaws.services.dynamodbv2.model.KeysAndAttributes;
 import com.amazonaws.services.dynamodbv2.model.PutItemResult;
 import com.amazonaws.services.dynamodbv2.model.PutRequest;
 import com.amazonaws.services.dynamodbv2.model.ReturnValue;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
 import com.amazonaws.services.dynamodbv2.model.UpdateItemResult;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
@@ -262,29 +265,53 @@ public class DynamoConnection implements AutoCloseable {
 		}
 		return true;
 	}
+	
+	// limit is 100 items, but i am capping it to 80 items
+	public static final int BACTH_GET_CAP = Optional.ofNullable(System.getenv("DynamoConnection.BACTH_GET_CAP")).map(Integer::parseInt).orElse(80);
 
 	public List<Map<String, AttributeValue>> getBatch(String tableName, String idField, Stream<AttributeValue> ids, Collection<String> attributesToGet) {
+		List<Map<String, AttributeValue>> keys = ids.map(m -> singletonMap(idField, m)).collect(Collectors.toList());
+		if(keys.isEmpty())
+			return Collections.emptyList();
+
 		KeysAndAttributes attr = new KeysAndAttributes();
 		if (attributesToGet != null)
 			attr.withAttributesToGet(attributesToGet);
-		attr.withKeys(ids.map(m -> singletonMap(idField, m)).collect(Collectors.toList()));
-
-		BatchGetItemResult result = this.db.batchGetItem(singletonMap(tableName, attr));
+		
 		List<Map<String, AttributeValue>> sink = new ArrayList<>();
-		sink.addAll(result.getResponses().getOrDefault(tableName, Collections.emptyList()));
+		
+		for (int i = 0; i < keys.size(); i+=BACTH_GET_CAP) {
+			attr.setKeys(keys.subList(i, Math.min(i + BACTH_GET_CAP,  keys.size())));
 
-		int retries = 10;
-		Map<String, KeysAndAttributes> remaining;
-		while (--retries > 0 && !(remaining = result.getUnprocessedKeys()).isEmpty()) {
-			logger.debug("retry 'get' attempt {} for tablename: {}, idField: {}, remaining({}): {}", 10 - retries, tableName, idField, remaining.size(), remaining);
-			result = this.db.batchGetItem(remaining);
+			BatchGetItemResult result = this.db.batchGetItem(singletonMap(tableName, attr));
 			sink.addAll(result.getResponses().getOrDefault(tableName, Collections.emptyList()));
+
+			int retries = 10;
+			Map<String, KeysAndAttributes> remaining;
+			while (--retries > 0 && !(remaining = result.getUnprocessedKeys()).isEmpty()) {
+				logger.debug("retry 'get' attempt {} for tablename: {}, idField: {}, remaining({}): {}", 10 - retries, tableName, idField, remaining.size(), remaining);
+				result = this.db.batchGetItem(remaining);
+				sink.addAll(result.getResponses().getOrDefault(tableName, Collections.emptyList()));
+			}
+			if(!result.getUnprocessedKeys().isEmpty())
+				throw new IllegalStateException("get operation failed: "+result.getUnprocessedKeys());	
 		}
-		if(!result.getUnprocessedKeys().isEmpty())
-			throw new IllegalStateException("get operation failed: "+result.getUnprocessedKeys());
+		
 		return sink;
 	}
 	
+	public List<Map<String, AttributeValue>> collect(ScanRequest req) {
+		List<Map<String, AttributeValue>> sink = new ArrayList<>(); 
+		Map<String, AttributeValue> lastKeyEvaluated = null;
+		do {
+		    ScanResult result = db.scan(req.withExclusiveStartKey(lastKeyEvaluated));
+		    sink.addAll(result.getItems());
+		    lastKeyEvaluated = result.getLastEvaluatedKey();
+		} while (lastKeyEvaluated != null);
+		
+		return sink;
+	}
+			
 	public static Map<String, String> toAttributesToGet(Collection<String> list) {
 		return list.stream().collect(Collectors.toMap(s -> "#".concat(s), s -> s));
 	}

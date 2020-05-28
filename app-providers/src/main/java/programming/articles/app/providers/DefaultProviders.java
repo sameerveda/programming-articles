@@ -18,30 +18,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import programming.articles.api.CacheHandler;
-import programming.articles.api.ConstantDataItemPagination;
-import programming.articles.api.IconManager;
-import programming.articles.api.ShortCacheHandler;
+import programming.articles.api.DataItemPagination;
 import programming.articles.api.StateManager;
 import programming.articles.impl.DefaultDataItemPagination;
-import programming.articles.impl.DefaultIconManager;
-import programming.articles.impl.DefaultShortCacheHandler;
 import programming.articles.impl.DefaultStateManager;
-import programming.articles.model.ConstantDataItem;
-import programming.articles.model.DataItem;
 import programming.articles.model.LoadedMetas;
 import sam.full.access.dynamodb.DynamoConnection;
 import sam.io.serilizers.ObjectWriter;
 import sam.myutils.MyUtilsException;
 
 public abstract class DefaultProviders {
-	public static final String CACHE_NAME_CONSTANT_DATAITEM = "constantDataItemCache";
-	public static final String CACHE_NAME_DATAITEM = "dataItemCache";
-	public static final String CACHE_NAME_ICONS = "iconStore";
-
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected final DefaultStateManager stateManager;
-	protected final DefaultIconManager iconManager;
 	protected final DefaultDataItemPagination dataItemPagination;
 	protected final DynamoConnection connection;
 	protected LoadedMetas loadedMetas;
@@ -60,13 +49,6 @@ public abstract class DefaultProviders {
 		this.stateManager.setConnection(connection);
 		this.loadedMetas.setConnection(connection);
 
-		this.stateManager.setCacheStore(
-				shortMap(cacheFor(CACHE_NAME_CONSTANT_DATAITEM), ConstantDataItem.class),
-				shortMap(cacheFor(CACHE_NAME_DATAITEM), DataItem.class)
-				);
-
-		Map<String, byte[]> map = cacheFor(CACHE_NAME_ICONS);
-		this.iconManager = map == null ? null : new DefaultIconManager(wrap(map, IconManager.class));
 		this.dataItemPagination = new DefaultDataItemPagination(stateManager);
 		dataItemPagination.setPageSize(lookupInt("dataitem.page.size", 50));
 	}
@@ -106,20 +88,8 @@ public abstract class DefaultProviders {
 		}
 	}
 
-	protected <T> ShortCacheHandler<T> shortMap(Map<Short, T> map, Class<T> cls) {
-		if (map == null || map == Collections.EMPTY_MAP)
-			return ShortCacheHandler.empty();
-
-		return new DefaultShortCacheHandler<>(wrap(map, cls));
-	}
-
 	public void close() throws Exception {
 		stateManager.close();
-		if (iconManager != null) {
-			logger.debug("waiting for icon thread to die");
-			iconManager.close();
-		}
-
 		closeables.forEach(t -> MyUtilsException.toUnchecked(() -> {
 			t.close();
 			return null;
@@ -138,13 +108,8 @@ public abstract class DefaultProviders {
 	}
 
 	@Provides
-	public ConstantDataItemPagination dataItemPagination() {
+	public DataItemPagination dataItemPagination() {
 		return dataItemPagination;
-	}
-
-	@Provides
-	public IconManager iconManager() {
-		return iconManager;
 	}
 
 	@Provides
