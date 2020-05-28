@@ -1,11 +1,11 @@
 package sam.book.search.model;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -17,6 +17,7 @@ import com.carrotsearch.hppc.IntObjectScatterMap;
 import com.carrotsearch.hppc.IntScatterSet;
 import com.carrotsearch.hppc.ObjectIntScatterMap;
 
+import sam.collection.ArraysUtils;
 import sam.fx.alert.FxAlert;
 import sam.myutils.Checker;
 import sam.myutils.HPPCUtils;
@@ -25,37 +26,35 @@ import sam.string.StringSplitIterator;
 
 public class ArticlesDB extends Sqlite4javaHelper {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+	public static final List<String> ALL_STATUS = Collections.unmodifiableList(Arrays.asList("UNREAD", "READ", "LATER", "DELETED", "FAVORITE"));
 
 	private final IntObjectScatterMap<String> datesMap = new IntObjectScatterMap<>();
-	private final IntObjectScatterMap<String> iconMap = new IntObjectScatterMap<>();
+	private final IntObjectScatterMap<String> faviconsMap = new IntObjectScatterMap<>();
 	private IntObjectScatterMap<String> tagsIdMap;
 	private ObjectIntScatterMap<String> tagsNameMap;
+	private int today = -1;
 
 	public ArticlesDB(File dbpath) throws SQLiteException {
 		super(dbpath, false);
 	}
 
-	public SQLiteStatement queryIds(ArticleStatus status, SortBy sort, SortDir sortDir, String nameLike,
-			String additionalWhere) throws SQLiteException {
+	public List<Integer>  queryIds(String status, SortBy sort, SortDir sortDir, String nameLike, String additionalWhere) throws SQLiteException {
 		if (Checker.isEmptyTrimmed(nameLike))
 			nameLike = null;
 		if (Checker.isEmptyTrimmed(additionalWhere))
 			additionalWhere = null;
 
-		if (status == null && sort == null && nameLike == null && additionalWhere == null) {
-			return con.prepare("SELECT id FROM Data;");
-		}
+		if (status == null && sort == null && nameLike == null && additionalWhere == null) 
+			return collectToList("SELECT id FROM Data;", getInt(0));
 
-		if (status == null && nameLike == null && additionalWhere == null) {
-			return con.prepare(String.format("SELECT id FROM Data ORDER BY %s %s;", sort.field,
-					sortDir == null ? sort.dir : sortDir));
-		}
+		if (status == null && nameLike == null && additionalWhere == null) 
+			return collectToList(String.format("SELECT id FROM Data ORDER BY %s %s;", sort.field, sortDir == null ? sort.dir : sortDir), getInt(0));
 
 		StringBuilder sql = new StringBuilder("SELECT id FROM Data WHERE ");
 
 		if (status != null) {
 			sql.append("(");
-			if (status == ArticleStatus.UNREAD)
+			if ("UNREAD".equals(status))
 				sql.append("status IS NULL OR ");
 			sql.append("status = '").append(status).append("') ");
 		}
@@ -79,9 +78,9 @@ public class ArticlesDB extends Sqlite4javaHelper {
 		SQLiteStatement st = con.prepare(sql.toString());
 		if (nameLike != null)
 			st.bind(1, "%" + nameLike + "%");
-		
+
 		logger.debug("{}", sql.append(nameLike == null ? "" : "%" + nameLike + "%"));
-		return st;
+		return collectToList(st, getInt(0));
 	}
 
 	public String getDate(int id) {
@@ -89,58 +88,64 @@ public class ArticlesDB extends Sqlite4javaHelper {
 	}
 
 	public String getIcon(int id) {
-		return iconMap.get(id);
+		return faviconsMap.get(id);
 	}
 
-	private final StringBuilder select_sql = new StringBuilder(Article.SELECT_SQL).append(" WHERE id IN(");
-	private final int length = select_sql.length();
-
-	public Map<Integer, Article> loadData(Stream<Integer> ids) {
-		select_sql.setLength(length);
-		ids.forEach(s -> select_sql.append(s).append(','));
-		select_sql.setCharAt(select_sql.length() - 1, ')');
-		select_sql.append(';');
+	public Map<Integer, Title> loadTitles(Stream<Integer> ids) {
+		int[] array = ids.mapToInt(Integer::intValue).toArray();
+		if(array.length == 0)
+			return Collections.emptyMap();
 
 		try {
-			Map<Integer, Article> map = stream(select_sql.toString(), Article::new)
-					.collect(Collectors.toMap(a -> a.id, a -> a));
-			fill(datesMap, "Dates", "_date", map.values().stream().flatMapToInt(a -> IntStream.of(a.addedOn, a.updatedOn)));
-			fill(iconMap, "Favicons", "url", map.values().stream().mapToInt(a -> a.favicon));
-			return map;
+			return collectToMap("SELECT id, title FROM Data WHERE id IN" + ArraysUtils.toString(array), rs -> rs.columnInt(0), rs -> new Title(rs.columnInt(0), rs.columnString(1)));
 		} catch (SQLiteException e) {
-			FxAlert.showErrorDialog(select_sql, "failed to load", e);
+			FxAlert.showErrorDialog("SELECT id, title FROM Data WHERE id IN" + ArraysUtils.toString(array), "failed to load", e);
 		}
 		return Collections.emptyMap();
 	}
 
 	public String[] parseTags(String tags) {
 		this.initTags();
-		
+
 		if(Checker.isEmptyTrimmed(tags))
-		return  new String[0];
-		
+			return  new String[0];
+
 		IntScatterSet set = new IntScatterSet();
 		new StringSplitIterator(tags, '.')
 		.forEachRemaining(s -> {
 			if(Checker.isNotEmptyTrimmed(s))
 				set.add(Integer.parseInt(s));
 		});
-		
+
 		int[] array = set.toArray();
 		Arrays.sort(array);
 		String[] res = new String[array.length];
-		
+
 		for (int i = 0; i < res.length; i++) 
 			res[i] = this.tagsIdMap.get(array[i]);
-		
+
 		return res;
 	}
-
-	private void fill(IntObjectScatterMap<String> map, String tableName, String field, IntStream stream) throws SQLiteException {
-		int[] array = stream.filter(t -> !map.containsKey(t)).distinct().toArray();
-		if(array.length == 0)
-			return;
-		iterate(String.format("SELECT id, %s FROM %s WHERE id IN %s", field, tableName, Arrays.toString(array).replace('[', '(').replace(']', ')')), rs -> map.put(rs.columnInt(0), rs.columnString(1)));
+	
+	public String serializeTags(String[] tagNames) {
+		if(Checker.isEmpty(tagNames))
+			return null;
+		
+		initTags();
+		StringBuilder sb = new StringBuilder(tagNames.length * 3);
+		
+		Arrays.stream(tagNames)
+		.mapToInt(s -> {
+			int n = this.tagsNameMap.getOrDefault(s.toLowerCase(), -1);
+			if(n < 0)
+				throw new IllegalStateException("no id found for tag: "+s);
+			return n;
+		})
+		.sorted()
+		.distinct()
+		.forEach(n -> sb.append('.').append(n).append('.'));
+		
+		return sb.toString();
 	}
 
 	public String[] allTags() {
@@ -164,7 +169,7 @@ public class ArticlesDB extends Sqlite4javaHelper {
 	public String getTag(String s) {
 		if(Checker.isEmptyTrimmed(s))
 			return null;
-		
+
 		s = s.trim();
 		int id = this.tagsNameMap.getOrDefault(s, -1);
 		if(id == -1) {
@@ -185,5 +190,50 @@ public class ArticlesDB extends Sqlite4javaHelper {
 		} else {
 			return tagsIdMap.get(id);
 		}
+	}
+
+	public Article getArticle(int id) {
+		try {
+			Article c = getFirstByInt("SELECT * FROM Data WHERE id is ?", id, Article::new);
+
+			if(!this.faviconsMap.containsKey(c.favicon)) 
+				this.faviconsMap.put(c.favicon, getFirstByInt("SELECT url FROM Favicons WHERE id is ?", c.favicon, getString(0)));
+			if(!this.datesMap.containsKey(c.addedOn)) 
+				this.datesMap.put(c.addedOn, getFirstByInt("SELECT _date FROM Dates WHERE id is ?", c.addedOn, getString(0)));
+			if(!this.datesMap.containsKey(c.updatedOn)) 
+				this.datesMap.put(c.updatedOn, getFirstByInt("SELECT _date FROM Dates WHERE id is ?", c.updatedOn, getString(0)));
+			return c;
+		} catch (SQLiteException e) {
+			FxAlert.showErrorDialog("SELECT * FROM Data WHERE id is "+id, "failed to load", e);
+		}
+		return null;
+	}
+
+	public Article update(Article c) {
+		try {
+			if(today == -1) {
+				String now = LocalDate.now().toString();
+				Integer n = getFirst("SELECT id FROM Dates WHERE _date=?", st -> st.bind(1, now), getInt(0));
+				if(n == null) {
+					today = getFirst("SELECT max(id) FROM Dates", null, getInt(0)) + 1;
+					execute("INSERT INTO Dates(id, _date) VALUES(?,?);", st -> {
+						st.bind(1, today);
+						st.bind(2, now);
+					});
+				} else {
+					today = n;
+				}
+			}
+			
+			execute("UPDATE Data SET status=?, tags=?, updatedOn=?, version=version+1 WHERE id=?;", st -> {
+				st.bind(1, c.getStatus());
+				st.bind(2, c.getTags());
+				st.bind(3, today);
+				st.bind(4, c.id);
+			});
+		} catch (SQLiteException e) {
+			FxAlert.showErrorDialog(c, "failed to update article", e);
+		}
+		return getArticle(c.id);
 	}
 }

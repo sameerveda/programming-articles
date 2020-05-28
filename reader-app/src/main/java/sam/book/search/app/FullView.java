@@ -1,11 +1,11 @@
 package sam.book.search.app;
 
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -28,8 +28,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import sam.book.search.model.Article;
-import sam.book.search.model.ArticleStatus;
 import sam.book.search.model.ArticlesDB;
+import sam.book.search.model.Title;
 import sam.fx.helpers.FxButton;
 import sam.fx.helpers.FxCss;
 import sam.fx.helpers.FxGridPane;
@@ -38,7 +38,7 @@ import sam.internetutils.InternetUtils;
 import sam.myutils.Checker;
 import sam.reference.WeakMap;
 
-public class FullView extends VBox implements Runnable, EventHandler<ActionEvent> {
+class FullView extends VBox implements Runnable, EventHandler<ActionEvent> {
 	private int row = 0;
 	private final GridPane grid = FxGridPane.gridPane(5);
 	private final Text id = add("Id: ", new Text());
@@ -46,8 +46,7 @@ public class FullView extends VBox implements Runnable, EventHandler<ActionEvent
 	private final Hyperlink source = add("Source: ", wrap(new Hyperlink()));
 	private final Hyperlink redirect = add("Redirect: ", wrap(new Hyperlink()));
 	private final Text addedOn = add("Added On: ", new Text());
-	private final ChoiceBox<ArticleStatus> status = add("Status: ",
-			new ChoiceBox<>(FXCollections.observableArrayList(ArticleStatus.values())));
+	private final ChoiceBox<String> status = add("Status: ", new ChoiceBox<>(FXCollections.observableArrayList(ArticlesDB.ALL_STATUS)));
 	private final Text updatedOn = add("Updated On: ", new Text());
 	private final Text version = add("Version: ", new Text());
 
@@ -62,24 +61,31 @@ public class FullView extends VBox implements Runnable, EventHandler<ActionEvent
 	private final WeakMap<String, Image> icons = new WeakMap<>(new ConcurrentHashMap<>());
 	private final AtomicReference<String> iconToLoad = new AtomicReference<>();
 	private Thread thread;
+	private Article article;
 	
-	private final MutableItem<String[]> tagsData = new MutableItem<>(Arrays::equals);
-	private final MutableItem<ArticleStatus> statusData = new MutableItem<>((a,b) -> a == b);
+	private SimpleIntegerProperty onUpdate = new SimpleIntegerProperty();
 
 	public FullView(ArticlesDB db, Runnable previous, Runnable next) {
 		super(5);
 		this.db = db;
 		this.tags.setOrientation(Orientation.HORIZONTAL);
+		this.tags.setOnUpdate(e -> {
+			article.setTags(db.serializeTags(e));
+			update();
+		});
 		setStyle("-fx-font-family:Consolas;-fx-background-color:white;");
 		setPadding(new Insets(5));
 		tags.setHgap(5);
 		tags.setVgap(5);
+		
+		notes.setText("NOT YET IMPLEPLEMENTED");
+		notes.setDisable(true);
 
 		this.rootView = new Node[] {icon, grid, new Text("Tags: "), tags, new Text("Notes: "), notes,  FxHBox.buttonBox(
 				FxButton.button("PREVIOUS", e -> previous.run()),
 				FxButton.button("NEXT", e -> next.run()),
 				FxHBox.maxPane(),
-				FxButton.button("SAVE", e -> save(), Bindings.createBooleanBinding(() -> !(statusData.isChanged() || tagsData.isChanged()), statusData, tagsData))
+				FxButton.button("SAVE", e -> save(), Bindings.createBooleanBinding(() -> article == null || !article.isChanged(), onUpdate))
 				)};
 
 		getChildren().setAll(rootView);
@@ -93,23 +99,35 @@ public class FullView extends VBox implements Runnable, EventHandler<ActionEvent
 		addTags.setAlignment(Pos.CENTER);
 		addTags.setBorder(FxCss.border(Color.BLACK));
 		addTags.setOnAction(e -> addTagsView());
-		status.getSelectionModel().selectedItemProperty().addListener((p, o, n) -> statusData.set(n));
+		status.getSelectionModel().selectedItemProperty().addListener(e -> {
+			if(article != null) {
+				article.setStatus(status.getSelectionModel().getSelectedItem());
+				update();				
+			}
+		});
 		
 		this.setDisable(true);
 	}
 
+	private void update() {
+		onUpdate.set(onUpdate.get() + 1);
+	}
+
 	private void save() {
-		// TODO Auto-generated method stub
+		this.set(db.update(article));
 	}
 
 	private void addTagsView() {
 		if(tagsAdder == null) 
 			tagsAdder = new TagsAdder(db);
 		getChildren().setAll(tagsAdder);
-		tagsAdder.open(tagsData.get() == null ? tagsData.getOld() : tagsData.get(), res -> {
+		tagsAdder.open(tags.getTags(), res -> {
 			getChildren().setAll(rootView);
 			if(res != null) {
-				tagsData.set(res);
+				tags.setTags(res);
+				tags.add(addTags);
+				article.setTags(db.serializeTags(res));
+				update();
 			}
 		});
 	}
@@ -122,8 +140,13 @@ public class FullView extends VBox implements Runnable, EventHandler<ActionEvent
 				App.browse(h.getText());
 		}
 	}
-
+	
+	public void set(Title title) {
+		set(db.getArticle(title.id));
+	}
+	
 	public void set(Article article) {
+		this.article = null;
 		this.setDisable(article == null);
 		
 		id.setText(String.valueOf(article.id));
@@ -131,16 +154,13 @@ public class FullView extends VBox implements Runnable, EventHandler<ActionEvent
 		source.setText(article.source);
 		redirect.setText(article.redirect);
 		addedOn.setText(db.getDate(article.addedOn));
-		statusData.setOld(ArticleStatus.parse(article.status));
-		status.getSelectionModel().select(statusData.getOld());
-		updatedOn.setText(db.getDate(article.updatedOn));
+		status.getSelectionModel().select(article.status == null ? "UNREAD" : article.status);
+		updatedOn.setText(article.updatedOn == 0 ? "NEVER" : db.getDate(article.updatedOn));
 		version.setText(String.valueOf(article.version));
 		
-		this.tagsData.setOld(db.parseTags(article.tags));
-		this.tags.setTags(tagsData.getOld());
+		this.tags.setTags(db.parseTags(article.tags));
 		this.tags.add(addTags);
 		
-		this.tagsData.set(null);
 		if(this.getChildren().size() < 2)
 			this.getChildren().setAll(this.rootView);
 
@@ -159,6 +179,9 @@ public class FullView extends VBox implements Runnable, EventHandler<ActionEvent
 				this.iconToLoad.set(url);
 			}
 		}
+		
+		this.article = article;
+		update();
 	}
 
 	@Override

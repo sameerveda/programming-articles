@@ -16,6 +16,7 @@ import static sam.book.search.model.ArticleMeta.VERSION;
 import static java.util.Arrays.*;
 import static java.util.Collections.*;
 import java.util.List;
+import java.util.Objects;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -36,6 +37,10 @@ public class Article {
 	public final String notes;
 	public final int updatedOn;
 	public final int version;
+	
+	private String new_tags;
+	private String new_status;
+	private String new_notes;
 
 	public Article(SQLiteStatement rs) throws SQLiteException {
 		int n = 0;
@@ -50,6 +55,10 @@ public class Article {
 		this.notes = rs.columnString(n++); // NOTES
 		this.updatedOn = rs.columnInt(n++); // UPDATEDON
 		this.version = rs.columnInt(n++); // VERSION
+		
+		this.new_tags = this.tags;
+		this.new_status = this.status;
+		this.new_notes = this.notes;
 	}
 
 	public Article(int id, String title, String source, String redirect, String tags, int favicon, int addedOn, String status,
@@ -67,53 +76,32 @@ public class Article {
 		this.version = version;
 	}
 
-	public int getId() {
-		return this.id;
-	}
-
-	public String getTitle() {
-		return this.title;
-	}
-
-	public String getSource() {
-		return this.source;
-	}
-
-	public String getRedirect() {
-		return this.redirect;
-	}
-
-	public String getTags() {
-		return this.tags;
-	}
-
-	public int getFavicon() {
-		return this.favicon;
-	}
-
-	public int getAddedOn() {
-		return this.addedOn;
-	}
-
-	public String getStatus() {
-		return this.status;
-	}
-
-	public String getNotes() {
-		return this.notes;
-	}
-
-	public int getUpdatedOn() {
-		return this.updatedOn;
-	}
-
-	public int getVersion() {
-		return this.version;
-	}
-	
 	@Override
 	public String toString() {
-		return title;
+		return "Article [id=" + id + ", title=" + title + ", source=" + source + ", redirect=" + redirect + ", tags="
+				+ tags + ", favicon=" + favicon + ", addedOn=" + addedOn + ", status=" + status + ", notes=" + notes
+				+ ", updatedOn=" + updatedOn + ", version=" + version + ", new_tags=" + new_tags + ", new_status="
+				+ new_status + ", new_notes=" + new_notes + "]";
+	}
+
+	public boolean isChanged() {
+		return 
+				!Objects.equals(tags, new_tags) || 
+				!Objects.equals(status, new_status) || 
+				!Objects.equals(notes, new_notes) 
+				;
+	}
+
+	public void setTags(String new_tags) {
+		this.new_tags = new_tags;
+	}
+
+	public void setStatus(String new_status) {
+		this.new_status = new_status;
+	}
+
+	public void setNotes(String new_notes) {
+		this.new_notes = new_notes;
 	}
 
 	public static final String SELECT_SQL = "SELECT " + String.join(",", COLUMNS) + " FROM " + DATA_TABLE_NAME;
@@ -134,4 +122,10 @@ public class Article {
 		p.bind(n++, version);
 	}
 
+	public String getStatus() {
+		return new_status;
+	}
+	public String getTags() {
+		return new_tags;
+	}
 }

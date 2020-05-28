@@ -5,12 +5,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import sam.book.search.model.ArticleStatus;
+import sam.book.search.model.ArticlesDB;
 import sam.book.search.model.SortBy;
 
 public enum Choices {
     TYPE(App.SHOW_ALL, new String[]{App.SHOW_ALL, App.BOOKMARK}),
-    STATUS(ArticleStatus.UNREAD, ArticleStatus.values()),
+    STATUS("UNREAD", ArticlesDB.ALL_STATUS.toArray()),
     SORT_BY(SortBy.ADDED, SortBy.values());
     
     final Object defaultValue;

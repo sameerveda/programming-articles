@@ -25,30 +25,35 @@ class TagsAdder extends VBox {
 	private final TagsListView tags = new TagsListView();
 
 	private final ArticlesDB db;
-	
+
 	private Consumer<String[]> onResult;
 	private boolean textSelected = false;
-	
+
 	public TagsAdder(ArticlesDB db) {
+		super(5);
 		this.db = db;
 		String[] strs = db.allTags();
 		Arrays.sort(strs);
-		list = FXCollections.observableList(Arrays.asList(strs));
+		list = FXCollections.observableArrayList(strs);
 		filtered = new FilteredList<>(list);
 		listView = new ListView<>(filtered);
 		search.textProperty().addListener((p, o, n) -> filtered.setPredicate(computePredicate(n)));
-		
+		listView.setOnMouseClicked(e -> {
+			if(e.getClickCount() > 1)
+				addTag(listView.getSelectionModel().getSelectedItem());
+		});
+
 		setFillWidth(true);
-		
+
 		VBox.setVgrow(listView, Priority.ALWAYS);
 		search.setOnKeyReleased(e -> handleKeyEvent(e));
-		
+
 		getChildren().addAll(search, listView, tags, FxHBox.buttonBox(
 				FxButton.button("CANCEL", e -> result(null)),
 				FxButton.button("OK", e -> result(tags.getTags()))
 				));
 	}
-	
+
 	private void result(String[] tags) {
 		this.onResult.accept(tags);
 		this.onResult = null;
@@ -58,7 +63,7 @@ class TagsAdder extends VBox {
 		this.tags.setTags(input);
 		this.onResult = onResult; 
 	}
-	
+
 	private Predicate<String> computePredicate(String text) {
 		this.textSelected = true;
 		if (Checker.isEmptyTrimmed(text))
@@ -91,15 +96,20 @@ class TagsAdder extends VBox {
 				listView.getSelectionModel().selectNext();			
 				break;
 			case ENTER:
-				String tag = this.textSelected ? this.db.getTag(this.search.getText()) : this.listView.getSelectionModel().getSelectedItem();
-				if(tag != null) {
-					this.tags.add(tag);
-					this.listView.getItems().remove(tag);
-					this.listView.getItems().add(0, tag);
-				}
+				addTag(this.textSelected ? this.db.getTag(this.search.getText()) : this.listView.getSelectionModel().getSelectedItem());
 				break;
 			default:
 				break;
 		}
+	}
+
+	private void addTag(String tag) {
+		if(tag == null)
+			return;
+
+		this.tags.add(tag);
+		this.list.remove(tag);
+		this.list.add(0, tag);
+		this.search.setText(null);
 	}
 }

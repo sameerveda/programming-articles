@@ -134,7 +134,7 @@ public class RssOwlUrlProcessor {
 
 			sqliteDb.iterate("SELECT id, name FROM Tags", st -> {
 				short id = (short) st.columnInt(0);
-				if (db.get(id).equals(st.columnString(1)))
+				if (Objects.equals(db.get(id), st.columnString(1)))
 					db.remove(id);
 				else
 					sqlite.put(id, st.columnString(1));

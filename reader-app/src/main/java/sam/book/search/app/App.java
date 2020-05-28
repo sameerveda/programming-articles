@@ -22,10 +22,10 @@ import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import sam.book.search.model.Article;
-import sam.book.search.model.ArticleStatus;
 import sam.book.search.model.ArticlesDB;
 import sam.book.search.model.SortBy;
 import sam.book.search.model.SortDir;
+import sam.book.search.model.Title;
 import sam.fx.alert.FxAlert;
 import sam.fx.clipboard.FxClipboard;
 import sam.fx.components.LazyListView;
@@ -47,7 +47,7 @@ public class App extends Application {
 	@FXML private Text countText;
 	@FXML private TextField searchField;
 	@FXML private IconButton dirFilter;
-	@FXML private LazyListView<Integer, Article> booklist;
+	@FXML private LazyListView<Integer, Title> booklist;
 	@FXML private Hyperlink typeChoice;
 	@FXML private Hyperlink statusChoice;
 	@FXML private Hyperlink sortByChoice;
@@ -56,7 +56,7 @@ public class App extends Application {
 	private SortDir sortDir;
 	private Stage stage;
 	private FullView fullview;
-	
+
 	private static HostServices hostservice;
 
 	@Override
@@ -64,12 +64,12 @@ public class App extends Application {
 		hostservice = getHostServices();
 		this.stage = stage;
 		try {
-			String dbPath = System2.lookup("db_path");
+			String dbPath = System2.lookup("SQL_DB_PATH");
 			if (dbPath == null) {
-				throw new IllegalStateException("env \"db_path\" not set");
+				throw new IllegalStateException("env \"SQL_DB_PATH\" not set");
 			}
 			if (!new File(dbPath.trim()).exists()) {
-				throw new FileNotFoundException("db not found, db_path: " + dbPath);
+				throw new FileNotFoundException("db not found, SQL_DB_PATH: " + dbPath);
 			}
 
 			FxFxml.load(ClassLoader.getSystemResource("fxml/App.fxml"), stage, this);
@@ -87,42 +87,17 @@ public class App extends Application {
 			sortDir = ((SortBy) selected.get(Choices.SORT_BY)).dir;
 
 			con = new ArticlesDB(new File(dbPath.trim()));
-			
+
 			fullview = new FullView(con, booklist.getSelectionModel()::selectPrevious, booklist.getSelectionModel()::selectNext);
 			mainRoot.getItems().add(fullview);
 			mainRoot.setDividerPositions(0.4, 0.6);
-			
-			booklist.getSelectionModel().selectedItemProperty().addListener((p, o, n) -> {
-				if(n instanceof Article)
-					fullview.set((Article)n);
-			});
+
+			booklist.getSelectionModel().selectedItemProperty().addListener((p, o, n) -> fullview.set((Title)n));
 			update(null);
 		} catch (Throwable e) {
 			FxUtils.setErrorTa(stage, "failed to init", "failed to init", e);
 		}
 		stage.show();
-	}
-
-	private void updateType(Object n, String type) {
-		if (selected.get(Choices.TYPE) != SHOW_ALL)
-			return;
-		try {
-			int changes = con.execute("UPDATE reader_app_data SET last_mod=? WHERE type=? AND _id=?", st -> {
-				st.bind(1, System.currentTimeMillis());
-				st.bind(2, type);
-				st.bind(3, id(n));
-			});
-
-			if (changes == 0) {
-				changes = con.execute("INSERT INTO reader_app_data(_id, type, last_mod) VALUES(?,?,?)", st -> {
-					st.bind(1, id(n));
-					st.bind(2, type);
-					st.bind(3, System.currentTimeMillis());
-				});
-			}
-		} catch (SQLiteException e) {
-			e.printStackTrace();
-		}
 	}
 
 	private int id(Object n) {
@@ -132,18 +107,13 @@ public class App extends Application {
 	@FXML
 	private void update(Event event) {
 		try {
-			SQLiteStatement st;
-			if (selected.get(Choices.TYPE) != SHOW_ALL) {
-				st = con.prepare("SELECT _id FROM reader_app_data WHERE type = ? ORDER BY last_mod DESC");
-				st.bind(1, selected.get(Choices.TYPE).toString());
-			} else {
-				st = con.queryIds(
-						selected.get(Choices.STATUS) == SHOW_ALL ? null : (ArticleStatus) selected.get(Choices.STATUS),
-						(SortBy) selected.get(Choices.SORT_BY), sortDir, searchField.getText(), null);
-			}
-			this.booklist.getItems().setAll(Sqlite4javaHelper.collectToList(st, rs -> rs.columnInt(0)));
+			this.booklist.getItems().setAll(con.queryIds(selected.get(Choices.STATUS) == SHOW_ALL ? null : (String) selected.get(Choices.STATUS), 
+					(SortBy) selected.get(Choices.SORT_BY), 
+					sortDir, 
+					searchField.getText(), 
+					null));
 			if (!booklist.isRunning())
-				booklist.start(Integer.class, con::loadData);
+				booklist.start(Integer.class, con::loadTitles);
 		} catch (SQLiteException e) {
 			e.printStackTrace();
 		}
@@ -222,7 +192,7 @@ public class App extends Application {
 				if (choice == Choices.SORT_BY)
 					sortDir = selected.get(choice) != o ? ((SortBy) o).dir
 							: sortDir == SortDir.DESC ? SortDir.ASC : SortDir.DESC;
-				update(null);
+					update(null);
 			}
 		});
 	}
