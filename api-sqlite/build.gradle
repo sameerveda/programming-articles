@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+  implementation project(':api-base')
+  implementation 'javax.inject:javax.inject:1'
+  implementation 'org.json:json:20201115'
+  implementation 'com.almworks.sqlite4java:sqlite4java:1.0.392'
+  
+  testImplementation 'junit:junit:4.12'
+}
+
+test {
+  systemProperties['SQL_DB_PATH'] = Objects.requireNonNull(System.env.SAM_DBS_DIR, "System.env.SAM_DBS_DIR not found")+'/programming-articles.db'
+  systemProperties['java.library.path'] = './lib'
+}

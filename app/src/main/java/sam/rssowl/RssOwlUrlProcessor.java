@@ -124,7 +124,8 @@ public class RssOwlUrlProcessor {
 
 	private SettableLoadedMetas sync(DynamoConnection dynamoDb, Sqlite4javaHelper sqliteDb)
 			throws SQLiteException, IOException, ClassNotFoundException {
-		SettableLoadedMetas metas = SettableLoadedMetas.load(dynamoDb, Arrays.asList(LoadedMetas.IDS, LoadedMetas.TAGS, LoadedMetas.IDS_STATUS), loadOldMetas());
+		SettableLoadedMetas metas = SettableLoadedMetas.load(dynamoDb,
+				Arrays.asList(LoadedMetas.IDS, LoadedMetas.TAGS, LoadedMetas.IDS_STATUS), loadOldMetas());
 		boolean updated = false;
 		metas.setConnection(dynamoDb);
 		{
@@ -200,18 +201,19 @@ public class RssOwlUrlProcessor {
 					m -> dynamo.put(Short.parseShort(m.get("id").getN()), Integer.parseInt(m.get("version").getN())));
 
 			ShortArrayList sqlite = new ShortArrayList();
-
-			sqliteDb.iterate("SELECT id, version FROM Data WHERE id IN" + ArraysUtils.toString(dynamo.keys().toArray()),
-					st -> {
-						short id = (short)st.columnInt(0);
-						int version = st.columnInt(1);
-						if(dynamo.get(id) > version)
-							sqlite.add(id);
-						if (dynamo.get(id) >= version)
-							dynamo.remove(id);
-						else 
-							sqlite.add(id);
-					});
+			sqliteDb.iterate("SELECT id, version FROM Data WHERE version > 0", st -> {
+				short id = (short) st.columnInt(0);
+				int vb = dynamo.getOrDefault(id, -1); 
+				int vs = st.columnInt(1);
+				
+				if(vb >= vs) {
+					dynamo.remove(id);
+					if(vb > vs)
+						sqlite.add(id);
+				} else {
+					dynamo.put(id, vs);
+				}
+			});
 
 			if (!sqlite.isEmpty()) {
 				System.out.println("PULL TO SQLITE: version changed: " + sqlite.size() + ": " + sqlite);
@@ -220,14 +222,17 @@ public class RssOwlUrlProcessor {
 				updated = true;
 			}
 
-			if(!dynamo.isEmpty()) {
-				System.out.println("PUSH TO DYNAMO: version changed: " + dynamo.size() + ": " + dynamo.keys().toString());
+			if (!dynamo.isEmpty()) {
+				System.out
+						.println("PUSH TO DYNAMO: version changed: " + dynamo.size() + ": " + dynamo.keys().toString());
 				pushItemsToDynamo(dynamo.keys(), sqliteDb, dynamoDb);
 				ShortByteMap statues = new ShortByteScatterMap();
-				sqliteDb.iterate("SELECT id, status FROM Data WHERE id IN"+ArraysUtils.toString(dynamo.keys().toArray()), rs -> statues.put((short)rs.columnInt(0), DataStatus.parse(rs.columnString(1)).byteValue()));
-				if(!statues.isEmpty()) {
-					System.out.println("Update Status: "+statues);
-					metas.addStatusIds(statues);					
+				sqliteDb.iterate(
+						"SELECT id, status FROM Data WHERE id IN" + ArraysUtils.toString(dynamo.keys().toArray()),
+						rs -> statues.put((short) rs.columnInt(0), DataStatus.parse(rs.columnString(1)).byteValue()));
+				if (!statues.isEmpty()) {
+					System.out.println("Update Status: " + statues);
+					metas.addStatusIds(statues);
 				}
 				updated = true;
 			}
@@ -257,9 +262,9 @@ public class RssOwlUrlProcessor {
 			return false;
 		System.out.println("PUSH TO: Dynamo, Data: " + ids.size() + ": " + ids);
 		IntObjectScatterMap<String> dates = new IntObjectScatterMap<>();
-		sqlite.iterate("SELECT id, _date  Dates", rs -> dates.put(rs.columnInt(0), rs.columnString(1)));
+		sqlite.iterate("SELECT id, _date FROM Dates", rs -> dates.put(rs.columnInt(0), rs.columnString(1)));
 		IntObjectScatterMap<String> favicons = new IntObjectScatterMap<>();
-		sqlite.iterate("SELECT id, url Favicons", rs -> favicons.put(rs.columnInt(0), rs.columnString(1)));
+		sqlite.iterate("SELECT id, url FROM Favicons", rs -> favicons.put(rs.columnInt(0), rs.columnString(1)));
 		pushDataItems(sqlite.collectToList("SELECT * FROM Data WHERE id IN" + ArraysUtils.toString(ids.toArray()),
 				rs -> new Mutableitem(rs, dates, favicons)), db);
 		return true;
@@ -338,7 +343,8 @@ public class RssOwlUrlProcessor {
 				return;
 
 			skipStrings.remove(null);
-			allTags = sqlite.stream("SELECT id, name FROM Tags", st -> new TempTag(st.columnString(1), st.columnInt(0))).toArray(TempTag[]::new);
+			allTags = sqlite.stream("SELECT id, name FROM Tags", st -> new TempTag(st.columnString(1), st.columnInt(0)))
+					.toArray(TempTag[]::new);
 		}
 
 		List<String> failed = Collections.synchronizedList(new ArrayList<>(sourceUrls));
@@ -347,7 +353,7 @@ public class RssOwlUrlProcessor {
 		if (!failed.isEmpty()) {
 			Path p = (filePath != null ? filePath : Paths.get("."))
 					.resolveSibling((filePath != null ? filePath.getFileName() : "") + "-" + System.currentTimeMillis()
-					+ "-rssowl-failed.txt");
+							+ "-rssowl-failed.txt");
 			Files.write(p, failed, CREATE);
 			System.out.println(ANSI.red("failed: ") + failed.size() + ANSI.yellow(" saved: ") + p.toAbsolutePath());
 		}

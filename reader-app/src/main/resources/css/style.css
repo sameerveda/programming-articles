@@ -44,3 +44,8 @@
 	-fx-background-color:lightcyan;
 	
 }
+
+#webview-progress > .bar {
+	-fx-background-insets: 1 1 2 1;
+    -fx-padding: 0.20em;
+}

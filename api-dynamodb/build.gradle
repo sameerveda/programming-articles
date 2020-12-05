@@ -1,0 +1,17 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+  implementation project(':api-base')
+  implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.681'
+  implementation 'javax.inject:javax.inject:1'
+  implementation 'org.json:json:20201115'
+  
+  testImplementation 'junit:junit:4.12'
+}
+

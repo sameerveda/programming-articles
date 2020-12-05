@@ -1,0 +1,4 @@
+include ':api-base'
+project(':api-base').projectDir = file('../api-base')
+
+rootProject.name = 'api-dynamodb'

@@ -15,7 +15,6 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.carrotsearch.hppc.IntObjectHashMap;
 import com.carrotsearch.hppc.ShortArrayList;
 
-import javafx.application.Application;
 import programming.articles.model.DataStatus;
 import programming.articles.model.LoadedMetas;
 import programming.articles.model.MetaReset;

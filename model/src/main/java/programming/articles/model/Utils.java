@@ -179,7 +179,7 @@ interface Utils {
 			}
 		});
 	}
-
+	
 	public static ShortByteScatterMap readStatus(Meta meta) {
 		return read(meta, new Reader() {
 			ShortByteScatterMap map;

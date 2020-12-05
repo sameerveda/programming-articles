@@ -1,1 +1,11 @@
+
+include ':api-base'
+project(':api-base').projectDir = file('../api-base')
+
+include ':api-dynamodb'
+project(':api-dynamodb').projectDir = file('../api-dynamodb')
+
+include ':api-sqlite'
+project(':api-sqlite').projectDir = file('../api-sqlite')
+
 rootProject.name = 'reader-app'

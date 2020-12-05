@@ -68,7 +68,7 @@ public class DynamoConnection implements AutoCloseable {
 
 	public PutItemResult putItem(String tableName, String keyField, AttributeValue keyValue, String valueField,
 			AttributeValue valueValue) {
-		Map<String, AttributeValue> item = new HashMap<>();
+		Map<String, AttributeValue> item = new HashMap<TABLE_NAME>();
 		item.put(keyField, keyValue);
 		item.put(valueField, valueValue);
 

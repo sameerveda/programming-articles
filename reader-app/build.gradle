@@ -2,27 +2,35 @@ plugins {
     id 'application'
 }
 
-ext.appdir = file(Objects.requireNonNull(System.env.SAM_PROGRAMS, "System.env.SAM_PROGRAMS not found")+'/rssowl/reader')
-apply from: 'https://raw.githubusercontent.com/sameerveda/resources/master/tasks.gradle'
+apply from: 'https://raw.githubusercontent.com/sameerveda/resources/master/tasks-v2.gradle'
 
 repositories {
     jcenter()
 }
 
-mainClassName = 'Main'
+mainClassName = 'sam.article.reader.app.Main'
  
-
 dependencies {
- implementation (
- 'com.carrotsearch:hppc:0.8.1',
- 'com.almworks.sqlite4java:sqlite4java:1.0.392',
- 'com.almworks.sqlite4java:sqlite4java-win32-x64:1.0.392',
- 'org.slf4j:slf4j-simple:2.0.0-alpha1',
- files('myutils.jar'),
- )
+  implementation 'com.almworks.sqlite4java:sqlite4java:1.0.392'
+  implementation 'com.almworks.sqlite4java:sqlite4java-win32-x64:1.0.392'
+  implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.681'
+  implementation 'org.json:json:20201115'
+  implementation 'org.codejargon.feather:feather:1.0'
+  implementation project(':api-base')
+  implementation project(':api-sqlite')
+  implementation project(':api-dynamodb')
+  implementation files('myutils.jar')
 }
 
 run {
   systemProperties['java.library.path'] = './lib'
-  systemProperties['SQL_DB_PATH'] = /C:\Users\sameer\Documents\MEGAsync\SimpleUtils\sam\programs\rssowl\data.db/
+  systemProperties['SQL_DB_PATH'] = Objects.requireNonNull(System.env.SAM_DBS_DIR, "System.env.SAM_DBS_DIR not found")+'/programming-articles.db'
+}
+
+samInstall {
+  dest = '/rssowl/reader'
+  envs['READER_APP_SQL_DB_PATH'] = '%SAM_DBS_DIR%/programming-articles.db'
+  envs['READER_APP_CONFIG_PATH'] = '%~dp0../reader-app-config.json'
+  relativeToPrograms = true
+  flat = true
 }
