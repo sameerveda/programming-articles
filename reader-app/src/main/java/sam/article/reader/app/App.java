@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.DelayQueue;
-import java.util.stream.Collectors;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -137,7 +136,7 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 				double[] dividers = new double[dividersArray.length()];
 				for (int i = 0; i < dividersArray.length(); i++)
 					dividers[i] = dividersArray.getDouble(i);
-				content.setDividerPositions(dividers);
+				Platform.runLater(() -> Platform.runLater(() -> content.setDividerPositions(dividers)));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();	
@@ -205,7 +204,8 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 		config.put("y", this.stage.getY());
 		config.put("width", this.stage.getWidth());
 		config.put("height", this.stage.getHeight());
-		config.put("dividers", Arrays.stream(this.content.getDividerPositions()).boxed().collect(Collectors.toList()));
+		double[] d = this.content.getDividerPositions();
+		config.put("dividers", Arrays.asList(d[0], 1 - d[0]));
 		try(Writer w = new FileWriter(configPath)) {
 			config.write(w);
 		}

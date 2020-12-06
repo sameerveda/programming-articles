@@ -25,13 +25,14 @@ dependencies {
 run {
   systemProperties['java.library.path'] = './lib'
   systemProperties['SQL_DB_PATH'] = Objects.requireNonNull(System.env.SAM_DBS_DIR, "System.env.SAM_DBS_DIR not found")+'/programming-articles.db'
+  systemProperties['CONFIG_PATH'] = 'bin/config.json'
 }
 
 samInstall {
-  dest = '/rssowl/reader'
+  dest = '/articles-reader'
   envs['READER_APP_SQL_DB_PATH'] = '%SAM_DBS_DIR%/programming-articles.db'
   envs['READER_APP_CONFIG_PATH'] = '%~dp0reader-app-config.json'
-  deleteOldJars = true
   relativeToPrograms = true
+  cmdName = 'run.cmd'
   flat = true
 }

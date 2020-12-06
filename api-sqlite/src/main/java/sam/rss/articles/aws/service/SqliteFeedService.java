@@ -234,8 +234,8 @@ public class SqliteFeedService implements FeedsService {
 		if(ids == null || ids.length == 0)
 			return;
 
-		connection.exec(Arrays.stream(ids).mapToObj(Integer::toString).collect(Collectors.joining(",", "UPDATE FeedEntries SET status='"+status+"' WHERE NOT status='"+status+"' AND id IN(", ")")));
-		System.out.println("    CHANGED STATUS TO: "+status + ": "+connection.getChanges());
+		connection.exec(Arrays.stream(ids).mapToObj(Integer::toString).collect(Collectors.joining(",", "UPDATE FeedEntries SET status='"+status+"' WHERE NOT status IS '"+status+"' AND id IN(", ")")));
+		System.out.println("    Update Status to: "+status + ", for: "+connection.getChanges());
 	}
 
 	public int[] idsFor(FeedEntryStatus status, boolean reverseSort) throws SQLiteException {
