@@ -9,12 +9,14 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.DelayQueue;
+import java.util.stream.Collectors;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.codejargon.feather.Feather;
 import org.codejargon.feather.Provides;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -85,7 +87,6 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 	@Override
 	public void start(Stage stage) throws Exception {
 		this.stage = stage;
-		content.setDividerPositions(0.3, 0.7);
 		progressIndicator.setAlignment(Pos.CENTER);
 		progressIndicator.setBackground(FxCss.background(new Color(0.9, 0.9, 0.9, 0.1)));
 		currentEntry.addListener((p, o, n) -> {
@@ -125,12 +126,21 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 		}
 
 		stage.setTitle("Expand Your Knowledge");
-		if(configPath.exists()) {
-			JSONObject json = new JSONObject(new JSONTokener(new FileInputStream(configPath)));
-			stage.setX(json.getDouble("x"));
-			stage.setY(json.getDouble("y"));
-			stage.setWidth(json.getDouble("width"));
-			stage.setHeight(json.getDouble("height"));
+		try {
+			if(configPath.exists()) {
+				JSONObject json = new JSONObject(new JSONTokener(new FileInputStream(configPath)));
+				stage.setX(json.getDouble("x"));
+				stage.setY(json.getDouble("y"));
+				stage.setWidth(json.getDouble("width"));
+				stage.setHeight(json.getDouble("height"));
+				JSONArray dividersArray = json.getJSONArray("dividers");
+				double[] dividers = new double[dividersArray.length()];
+				for (int i = 0; i < dividersArray.length(); i++)
+					dividers[i] = dividersArray.getDouble(i);
+				content.setDividerPositions(dividers);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();	
 		}
 		stage.show();
 		stage.toFront();
@@ -195,6 +205,7 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 		config.put("y", this.stage.getY());
 		config.put("width", this.stage.getWidth());
 		config.put("height", this.stage.getHeight());
+		config.put("dividers", Arrays.stream(this.content.getDividerPositions()).boxed().collect(Collectors.toList()));
 		try(Writer w = new FileWriter(configPath)) {
 			config.write(w);
 		}

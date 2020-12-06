@@ -7,6 +7,7 @@ import java.util.function.Predicate;
 
 import javax.inject.Inject;
 
+import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -70,7 +71,7 @@ class TagPillsListView extends FlowPane {
 
 		allTagsLV.setOnMouseClicked(e -> {
 			if(e.getClickCount() > 1)
-				addTag(allTagsLV.getSelectionModel().getSelectedItem());
+				Platform.runLater(() -> addTag(allTagsLV.getSelectionModel().getSelectedItem()));
 		});
 
 		search.textProperty().addListener((p, o, n) -> filtered.setPredicate(computePredicate(n)));
