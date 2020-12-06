@@ -3,6 +3,7 @@
 **/bin/
 .recommenders/
 ffe87d75-3b62-4a6c-82d5-a009a718bd56
+/*/build/
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/java,eclipse
