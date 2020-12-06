@@ -81,25 +81,17 @@ public class SqliteFeedService implements FeedsService {
 		}
 	}
 
-	public List<MinimalFeedEntry> getMinimalEntries(int[] ids) {
-		if (ids.length == 0)
-			return Collections.emptyList();
-		for (int id : ids) {
-			if (id < 100)
-				throw new IllegalArgumentException("bad id, id should be > 100, but was: " + id + "in: " + ids);
-		}
+	public List<MinimalFeedEntry> getMinimalEntries(FeedEntryStatus status, int offset, int limit, boolean reverseOrder) throws SQLiteException {
+		String sql = (status == UNREAD ? "SELECT id,title FROM FeedEntries WHERE status IS NULL OR status='UNREAD'" : "SELECT id,title FROM FeedEntries WHERE status='"+status+"'")
+				.concat(reverseOrder ? " ORDER BY id DESC" : "")
+				.concat(" LIMIT ? OFFSET ?");
 
-		try {
-			SQLiteStatement rs = connection.prepare(Arrays.stream(ids).mapToObj(id -> Integer.toString(id))
-					.collect(Collectors.joining(",", "SELECT id,title FROM FeedEntries WHERE id IN(", ")")), false);
-			List<MinimalFeedEntry> list = new ArrayList<>();
-			while (rs.step())
-				list.add(new MinimalFeedEntry(rs.columnInt(0), rs.columnString(1)));
+		SQLiteStatement rs = connection.prepare(sql, false).bind(1, limit).bind(2, offset);
+		List<MinimalFeedEntry> list = new ArrayList<>();
+		while (rs.step())
+			list.add(new MinimalFeedEntry(rs.columnInt(0), rs.columnString(1)));
 
-			return list;
-		} catch (SQLiteException e) {
-			throw new RuntimeException(e);
-		}
+		return list;
 	}
 
 	private FeedEntry feedEntry(SQLiteStatement rs) throws SQLiteException {
@@ -236,25 +228,6 @@ public class SqliteFeedService implements FeedsService {
 
 		connection.exec(Arrays.stream(ids).mapToObj(Integer::toString).collect(Collectors.joining(",", "UPDATE FeedEntries SET status='"+status+"' WHERE NOT status IS '"+status+"' AND id IN(", ")")));
 		System.out.println("    Update Status to: "+status + ", for: "+connection.getChanges());
-	}
-
-	public int[] idsFor(FeedEntryStatus status, boolean reverseSort) throws SQLiteException {
-		SQLiteStatement s = connection.prepare(status == UNREAD ? "SELECT id FROM FeedEntries WHERE status IS NULL OR status='UNREAD'" : "SELECT id FROM FeedEntries WHERE status='"+status+"'", false);
-		IntStream.Builder builder = IntStream.builder();
-		
-		while(s.step()) 
-			builder.add(s.columnInt(0));
-		
-		int[] array = builder.build().toArray();
-		Arrays.sort(array);
-		if(reverseSort) {
-			for (int i = 0; i < array.length/2; i++) {
-				int temp = array[i]; 
-				array[i] = array[array.length - i - 1];
-				array[array.length - i - 1] = temp;
-			}			
-		}
-		return array;
 	}
 
 }

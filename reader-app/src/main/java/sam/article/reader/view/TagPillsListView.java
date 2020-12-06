@@ -111,7 +111,7 @@ class TagPillsListView extends FlowPane {
 
 	private void remove(TagPill tag) {
 		this.getChildren().remove(tag);
-		getChildren().add(save);
+		addSaveBtn();
 	}
 
 	public void clear() {
@@ -138,7 +138,7 @@ class TagPillsListView extends FlowPane {
 
 	private Predicate<String> computePredicate(String text) {
 		this.textSelected = true;
-		if (Checker.isEmptyTrimmed(text))
+		if (text == null || text.isEmpty())
 			return null;
 		else {
 			String s = text.toLowerCase().trim();
@@ -194,9 +194,13 @@ class TagPillsListView extends FlowPane {
 			return;
 
 		this.getChildren().add(this.getChildren().indexOf(search), new TagPill(tag, true));
-		// this.fxAllTags.remove(tag);
-		// this.fxAllTags.add(0, tag);
+		this.fxAllTags.remove(tag);
+		this.fxAllTags.add(0, tag);
 		this.search.setText(null);
+		addSaveBtn();
+	}
+
+	private void addSaveBtn() {
 		if (!getChildren().contains(save))
 			getChildren().add(save);
 	}

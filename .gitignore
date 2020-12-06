@@ -6,8 +6,8 @@ ffe87d75-3b62-4a6c-82d5-a009a718bd56
 /*/build/
 
 
-# Created by https://www.toptal.com/developers/gitignore/api/java,eclipse
-# Edit at https://www.toptal.com/developers/gitignore?templates=java,eclipse
+# Created by https://www.toptal.com/developers/gitignore/api/eclipse,java,gradle
+# Edit at https://www.toptal.com/developers/gitignore?templates=eclipse,java,gradle
 
 ### Eclipse ###
 .metadata
@@ -100,4 +100,23 @@ local.properties
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-# End of https://www.toptal.com/developers/gitignore/api/java,eclipse
+### Gradle ###
+.gradle
+build/
+
+# Ignore Gradle GUI config
+gradle-app.setting
+
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+
+# Cache of project
+.gradletasknamecache
+
+# # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
+# gradle/wrapper/gradle-wrapper.properties
+
+### Gradle Patch ###
+**/build/
+
+# End of https://www.toptal.com/developers/gitignore/api/eclipse,java,gradle

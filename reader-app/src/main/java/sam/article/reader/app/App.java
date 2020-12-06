@@ -35,12 +35,15 @@ import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SplitPane;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -48,7 +51,9 @@ import javafx.stage.Stage;
 import sam.article.reader.api.LinkOpener;
 import sam.article.reader.api.LoadingIndicatorService;
 import sam.article.reader.view.ClassicView;
+import sam.fx.alert.FxAlert;
 import sam.fx.helpers.FxCss;
+import sam.fx.helpers.FxMenu;
 import sam.fx.helpers.FxUtils;
 import sam.rss.articles.aws.service.AwsFeedService;
 import sam.rss.articles.aws.service.SqliteFeedService;
@@ -58,12 +63,14 @@ import sam.rss.articles.sqlite.model.MinimalFeedEntry;
 import sam.rss.articles.utils.FeedEntryStatus;
 import sam.rss.articles.utils.Ids;
 
-public class App extends Application implements LoadingIndicatorService, ChangeListener<MinimalFeedEntry>, Runnable, LinkOpener {
+public class App extends Application
+		implements LoadingIndicatorService, ChangeListener<MinimalFeedEntry>, Runnable, LinkOpener {
 	private final ObservableList<MinimalFeedEntry> entriesList = FXCollections.observableArrayList();
 	private final FilteredList<MinimalFeedEntry> entriesFilteredList = new FilteredList<MinimalFeedEntry>(entriesList);
 
+	private final MenuBar menuBar = new MenuBar();
 	private final ListView<MinimalFeedEntry> entriesLV = new ListView<>(entriesFilteredList);
-	private final SplitPane content = new SplitPane(entriesLV);
+	private final SplitPane content = new SplitPane(new BorderPane(entriesLV, menuBar, null, null, null));
 	private final VBox progressIndicator = new VBox(new ProgressIndicator());
 	private final StackPane root = new StackPane(content, progressIndicator);
 
@@ -75,17 +82,18 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 
 	private AwsFeedService dynamo;
 	private SqliteFeedService sqlite;
-	private int[] ids;
-	private int page = -1;
 	private int size = 100;
 	private volatile int entryLoadDelay = 500; // in mills
 	private ClassicView articleView;
 	private File configPath;
 	private Stage stage;
+	private long startTime;
 
 	@Override
 	public void start(Stage stage) throws Exception {
 		this.stage = stage;
+
+		FxAlert.setParent(stage);
 		progressIndicator.setAlignment(Pos.CENTER);
 		progressIndicator.setBackground(FxCss.background(new Color(0.9, 0.9, 0.9, 0.1)));
 		currentEntry.addListener((p, o, n) -> {
@@ -95,22 +103,24 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 		});
 
 		stage.setScene(new Scene(root));
-		stage.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN), Platform::exit);
+		stage.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN),
+				Platform::exit);
 		stage.getIcons().add(new Image(ClassLoader.getSystemResourceAsStream("stage-icon.png")));
 		stage.getScene().getStylesheets().add(ClassLoader.getSystemResource("css/style.css").toExternalForm());
+
+		menuBar.getMenus().add(helpMenu());
 
 		try {
 			Feather feather = Feather.with(this);
 			configPath = new File(Objects.requireNonNull(getString("CONFIG_PATH")));
 			File dbFile = new File(getString("SQL_DB_PATH"));
-			
+
 			if (!dbFile.exists())
 				throw new FileNotFoundException("file not found: " + dbFile);
 
 			dynamo = new AwsFeedService(AmazonDynamoDBClientBuilder.standard().withRegion(Regions.AP_SOUTH_1).build());
 			sqlite = new SqliteFeedService(new SQLiteConnection(dbFile), true);
 			this.updateStatus();
-			this.ids = sqlite.idsFor(FeedEntryStatus.UNREAD, true);
 			this.entriesLV.getSelectionModel().selectedItemProperty().addListener(this);
 			this.articleView = feather.instance(ClassicView.class);
 			this.content.getItems().add(this.articleView);
@@ -118,7 +128,7 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 			entryLoadingThread.setDaemon(true);
 			entryLoadingThread.start();
 			hideLoading();
-			if(!entriesLV.getItems().isEmpty())
+			if (!entriesLV.getItems().isEmpty())
 				Platform.runLater(() -> entriesLV.getSelectionModel().select(0));
 		} catch (Exception e) {
 			FxUtils.setErrorTa(stage, "failed to init", e.getMessage(), e);
@@ -126,7 +136,7 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 
 		stage.setTitle("Expand Your Knowledge");
 		try {
-			if(configPath.exists()) {
+			if (configPath.exists()) {
 				JSONObject json = new JSONObject(new JSONTokener(new FileInputStream(configPath)));
 				stage.setX(json.getDouble("x"));
 				stage.setY(json.getDouble("y"));
@@ -139,20 +149,31 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 				Platform.runLater(() -> Platform.runLater(() -> content.setDividerPositions(dividers)));
 			}
 		} catch (Exception e) {
-			e.printStackTrace();	
+			e.printStackTrace();
 		}
 		stage.show();
 		stage.toFront();
+		startTime = System.currentTimeMillis();
+	}
+
+	private Menu helpMenu() {
+		return new Menu("Help", null, FxMenu.menuitem("Time Spent", e -> {
+			long s = (System.currentTimeMillis() - startTime) / 1000;
+			long h = s / 3600;
+			long m = s % 3600 / 60;
+			s = s % 3600 % 60;
+
+			FxAlert.showMessageDialog(String.format("%02dh, %02dm, %02ds", h, m , s), "Time Spent");
+		}));
 	}
 
 	private String getString(String key) {
-		return Objects.requireNonNull(Optional.ofNullable(System.getProperty(key)).orElseGet(() -> System.getenv("READER_APP_"+key)));
+		return Objects.requireNonNull(
+				Optional.ofNullable(System.getProperty(key)).orElseGet(() -> System.getenv("READER_APP_" + key)));
 	}
 
-	private void setPage(int page) {
-		this.page = page;
-		this.entriesList.setAll(this.sqlite
-				.getMinimalEntries(Arrays.copyOfRange(ids, page * size, Math.min(page * size + size, ids.length))));
+	private void setPage(int page) throws SQLiteException {
+		this.entriesList.setAll(this.sqlite.getMinimalEntries(FeedEntryStatus.UNREAD, page * size, size, true));
 	}
 
 	private void updateStatus() throws SQLiteException {
@@ -167,7 +188,7 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 	public void run() {
 		while (true) {
 			DImpl<MinimalFeedEntry> d = entryLoadingQueue.poll();
-			if(d != null && d.value == THREAD_STOPPER) 
+			if (d != null && d.value == THREAD_STOPPER)
 				return;
 			if (d == null || !entryLoadingQueue.isEmpty())
 				continue;
@@ -198,7 +219,7 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 
 		if (sqlite != null)
 			sqlite.close();
-		
+
 		JSONObject config = new JSONObject();
 		config.put("x", this.stage.getX());
 		config.put("y", this.stage.getY());
@@ -206,9 +227,11 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 		config.put("height", this.stage.getHeight());
 		double[] d = this.content.getDividerPositions();
 		config.put("dividers", Arrays.asList(d[0], 1 - d[0]));
-		try(Writer w = new FileWriter(configPath)) {
+		try (Writer w = new FileWriter(configPath)) {
 			config.write(w);
 		}
+		
+		articleView.close();
 		System.out.println("STOP");
 	}
 
@@ -233,7 +256,6 @@ public class App extends Application implements LoadingIndicatorService, ChangeL
 	@Provides
 	@Singleton
 	public Tags tags() {
-		System.out.println("get tags");
 		return dynamo.getTags();
 	}
 

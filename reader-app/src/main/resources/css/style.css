@@ -49,3 +49,7 @@
 	-fx-background-insets: 1 1 2 1;
     -fx-padding: 0.20em;
 }
+
+#classic-view, #classic-view * {
+	-fx-font-family: Consolas;
+}

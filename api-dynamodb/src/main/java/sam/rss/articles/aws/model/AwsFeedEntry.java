@@ -48,7 +48,7 @@ public class AwsFeedEntry extends FeedEntry {
 		update.put("updated_on", set(value(System.currentTimeMillis()/1000)));
 		
 		UpdateItemResult result = service.executeUpdate(this.getId(), update, ReturnValue.UPDATED_NEW, null);
-		System.out.println("UPDATE: " + field + ", " + result);
+		System.out.println("  UPDATE: " + field + ", " + result);
 		super.setUpdatedOn(Long.parseLong(result.getAttributes().get("updated_on").getN()));
 	}
 

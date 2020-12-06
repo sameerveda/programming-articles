@@ -3,6 +3,7 @@ plugins {
 }
 
 apply from: 'https://raw.githubusercontent.com/sameerveda/resources/master/tasks-v2.gradle'
+// apply from: /D:\importents_are_here\eclipse_workplace\resources\tasks-v2.gradle/
 
 repositories {
     jcenter()
